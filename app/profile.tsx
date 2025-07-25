@@ -3,9 +3,20 @@ import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput
+} from "react-native";
 import defaultProfile from "../assets/default-profile.png";
 import { auth, db } from "../firebase/config";
+import { uploadImageToCloudinary } from "../services/cloudinaryService";
 
 export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
@@ -54,31 +65,22 @@ export default function ProfileScreen() {
     });
 
     if (!pickerResult.canceled && pickerResult.assets.length > 0) {
-      const base64Img = `data:image/jpg;base64,${pickerResult.assets[0].base64}`;
-
-      const data = {
-        file: base64Img,
-        upload_preset: "bridgea", // 👈🏼 recuerda que este preset debe estar activo en tu Cloudinary
-      };
-
+      const uri = pickerResult.assets[0].uri;
       try {
-        const res = await fetch("https://api.cloudinary.com/v1_1/dqph2qm49/image/upload", {
-          method: "POST",
-          body: JSON.stringify(data),
-          headers: { "content-type": "application/json" },
-        });
+        const imageUrl = await uploadImageToCloudinary(uri);
 
-        const file = await res.json();
-        const imageUrl = file.secure_url;
+        if (!imageUrl) {
+          Alert.alert("Error", "No se pudo subir la imagen a Cloudinary.");
+          return;
+        }
 
-        // update Firestore
         const userRef = doc(db, "users", auth.currentUser!.uid);
         await updateDoc(userRef, { photoURL: imageUrl });
 
-        // update local state
         setUserData((prev: any) => ({ ...prev, photoURL: imageUrl }));
         Alert.alert("Éxito", "Foto de perfil actualizada");
       } catch (error) {
+        console.log("Error al subir la imagen:", error);
         Alert.alert("Error", "Hubo un problema al subir la imagen.");
       }
     }
@@ -103,69 +105,80 @@ export default function ProfileScreen() {
   if (!userData) return <Text style={styles.loading}>Cargando perfil...</Text>;
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={userData.photoURL ? { uri: userData.photoURL } : defaultProfile}
-        style={styles.profileImage}
-      />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Image
+          source={userData.photoURL ? { uri: userData.photoURL } : defaultProfile}
+          style={styles.profileImage}
+        />
 
-      <Pressable style={styles.uploadButton} onPress={handlePickImage}>
-        <Text style={styles.uploadButtonText}>Cambiar foto</Text>
-      </Pressable>
+        <Pressable style={styles.uploadButton} onPress={handlePickImage}>
+          <Text style={styles.uploadButtonText}>Cambiar foto</Text>
+        </Pressable>
 
-      <Text style={styles.label}>Nombre:</Text>
-      <Text style={styles.value}>{userData.name}</Text>
+        <Text style={styles.label}>Nombre:</Text>
+        <Text style={styles.value}>{userData.name}</Text>
 
-      <Text style={styles.label}>Username:</Text>
-      <Text style={styles.value}>{userData.username}</Text>
+        <Text style={styles.label}>Username:</Text>
+        <Text style={styles.value}>{userData.username}</Text>
 
-      <Text style={styles.label}>Correo:</Text>
-      <Text style={styles.value}>{userData.email}</Text>
+        <Text style={styles.label}>Correo:</Text>
+        <Text style={styles.value}>{userData.email}</Text>
 
-      <Text style={styles.label}>Edad:</Text>
-      <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
+        <Text style={styles.label}>Edad:</Text>
+        <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
 
-      <Text style={styles.label}>Fecha de registro:</Text>
-      <Text style={styles.value}>
-        {userData.createdAt?.toDate
-          ? userData.createdAt.toDate().toLocaleDateString()
-          : "No disponible"}
-      </Text>
+        <Text style={styles.label}>Fecha de registro:</Text>
+        <Text style={styles.value}>
+          {userData.createdAt?.toDate
+            ? userData.createdAt.toDate().toLocaleDateString()
+            : "No disponible"}
+        </Text>
 
-      <Text style={styles.label}>Bio:</Text>
-      {editingBio ? (
-        <>
-          <TextInput
-            style={styles.bioInput}
-            multiline
-            numberOfLines={3}
-            value={bio}
-            onChangeText={setBio}
-          />
-          <Pressable style={styles.button} onPress={handleSaveBio}>
-            <Text style={styles.buttonText}>Guardar</Text>
-          </Pressable>
-        </>
-      ) : (
-        <>
-          <Text style={styles.value}>{bio || "Sin biografía aún."}</Text>
-          <Pressable style={styles.button} onPress={() => setEditingBio(true)}>
-            <Text style={styles.buttonText}>Editar bio</Text>
-          </Pressable>
-        </>
-      )}
+        <Text style={styles.label}>Bio:</Text>
+        {editingBio ? (
+          <>
+            <TextInput
+              style={styles.bioInput}
+              multiline
+              numberOfLines={3}
+              value={bio}
+              onChangeText={setBio}
+            />
+            <Pressable style={styles.button} onPress={handleSaveBio}>
+              <Text style={styles.buttonText}>Guardar</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={styles.value}>{bio || "Sin biografía aún."}</Text>
+            <Pressable style={styles.button} onPress={() => setEditingBio(true)}>
+              <Text style={styles.buttonText}>Editar bio</Text>
+            </Pressable>
+          </>
+        )}
 
-      <Pressable style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
-      </Pressable>
-    </View>
+        <Pressable style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Cerrar sesión</Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { padding: 20, backgroundColor: "#fff", paddingBottom: 40 },
   loading: { marginTop: 50, textAlign: "center", fontSize: 16 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, alignSelf: "center", marginBottom: 20 },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
   uploadButton: {
     backgroundColor: "#ccc",
     padding: 8,

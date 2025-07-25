@@ -1,19 +1,33 @@
-// services/cloudinaryService.ts
+import * as FileSystem from "expo-file-system";
 
-export async function uploadImageToCloudinary(uri: string): Promise<string> {
-  const data = new FormData();
-  data.append('file', {
-    uri,
-    name: 'profile.jpg',
-    type: 'image/jpeg',
-  } as any);
-  data.append('upload_preset', 'bridgea_users'); // cambia esto si tu preset es otro
+export const uploadImageToCloudinary = async (uri: string): Promise<string | null> => {
+  try {
+    console.log("🔍 Leyendo archivo desde:", uri);
+    const base64Img = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
 
-  const response = await fetch('https://api.cloudinary.com/v1_1/dqph2qm49/image/upload', {
-    method: 'POST',
-    body: data,
-  });
+    const data = new FormData();
+    data.append("file", {
+      uri,
+      type: "image/jpeg",
+      name: "profile.jpg",
+    } as any);
+    data.append("upload_preset", "bridgea-app"); // debe coincidir exactamente
 
-  const result = await response.json();
-  return result.secure_url;
-}
+    console.log("🚀 Enviando imagen a Cloudinary...");
+
+    const res = await fetch("https://api.cloudinary.com/v1_1/dqqddecpb/image/upload", {
+      method: "POST",
+      body: data,
+    });
+
+    const result = await res.json();
+    console.log("✅ Cloudinary respondió:", result);
+
+    return result.secure_url;
+  } catch (error) {
+    console.log("❌ Error al subir imagen:", error);
+    return null;
+  }
+};
