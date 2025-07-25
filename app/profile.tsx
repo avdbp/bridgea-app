@@ -61,6 +61,7 @@ export default function ProfileScreen() {
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [1, 1],
+      base64: true,
     });
 
     if (!pickerResult.canceled && pickerResult.assets.length > 0) {
@@ -108,7 +109,7 @@ export default function ProfileScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.container}>
         <Image
           source={userData.photoURL ? { uri: userData.photoURL } : defaultProfile}
           style={styles.profileImage}
@@ -160,15 +161,12 @@ export default function ProfileScreen() {
           </>
         )}
 
-        <Pressable
-          style={styles.publicButton}
-          onPress={() => router.push(`/user/${userData.username}` as any)}
-        >
-          <Text style={styles.buttonText}>Ver mi perfil público</Text>
-        </Pressable>
-
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Cerrar sesión</Text>
+        </Pressable>
+
+        <Pressable style={styles.searchButton} onPress={() => router.push("/search")}>
+          <Text style={styles.searchButtonText}>Buscar usuarios</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -176,25 +174,18 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#fff", paddingBottom: 40 },
+  container: { padding: 20, backgroundColor: "#fff", alignItems: "center" },
   loading: { marginTop: 50, textAlign: "center", fontSize: 16 },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
+  profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 20 },
   uploadButton: {
     backgroundColor: "#ccc",
     padding: 8,
     borderRadius: 6,
-    alignSelf: "center",
     marginBottom: 20,
   },
   uploadButtonText: { color: "#333" },
-  label: { fontWeight: "bold", marginTop: 10 },
-  value: { marginBottom: 8 },
+  label: { fontWeight: "bold", marginTop: 10, alignSelf: "flex-start" },
+  value: { alignSelf: "flex-start", marginBottom: 8 },
   bioInput: {
     borderWidth: 1,
     borderColor: "#aaa",
@@ -202,6 +193,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     textAlignVertical: "top",
+    width: "100%",
   },
   button: {
     backgroundColor: "#8e44ad",
@@ -210,20 +202,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: "flex-start",
   },
-  publicButton: {
-    backgroundColor: "#3498db",
-    padding: 10,
-    borderRadius: 6,
-    marginTop: 10,
-    alignSelf: "center",
-  },
   buttonText: { color: "#fff", fontWeight: "bold" },
   logoutButton: {
-    marginTop: 30,
+    marginTop: 20,
     alignSelf: "center",
   },
   logoutText: {
     color: "red",
+    fontWeight: "bold",
+  },
+  searchButton: {
+    backgroundColor: "#3498db",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 15,
+    alignSelf: "center",
+  },
+  searchButtonText: {
+    color: "#fff",
     fontWeight: "bold",
   },
 });

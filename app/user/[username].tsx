@@ -12,7 +12,7 @@ import {
     View,
 } from "react-native";
 import defaultProfile from "../../assets/default-profile.png";
-import { db } from "../../firebase/config";
+import { auth, db } from "../../firebase/config";
 
 export default function PublicProfileScreen() {
   const { username } = useLocalSearchParams();
@@ -31,7 +31,7 @@ export default function PublicProfileScreen() {
           setUserData(null);
         } else {
           const doc = querySnapshot.docs[0];
-          setUserData(doc.data());
+          setUserData({ ...doc.data(), uid: doc.id });
         }
       } catch (error) {
         Alert.alert("Error", "No se pudo cargar el perfil.");
@@ -67,12 +67,14 @@ export default function PublicProfileScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.notFound}>Usuario no encontrado</Text>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable style={styles.backButton} onPress={() => router.replace("/search")}>
           <Text style={styles.backText}>Volver</Text>
         </Pressable>
       </View>
     );
   }
+
+  const isCurrentUser = auth.currentUser?.uid === userData.uid;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -84,14 +86,29 @@ export default function PublicProfileScreen() {
       <Text style={styles.name}>{userData.name}</Text>
       <Text style={styles.username}>@{userData.username}</Text>
 
-      <Text style={styles.label}>Correo:</Text>
-      <Text style={styles.value}>{userData.email}</Text>
+      {isCurrentUser && (
+        <>
+          <Text style={styles.label}>Correo:</Text>
+          <Text style={styles.value}>{userData.email}</Text>
+        </>
+      )}
 
       <Text style={styles.label}>Edad:</Text>
       <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
 
+      {userData.createdAt?.toDate && (
+        <>
+          <Text style={styles.label}>Miembro desde:</Text>
+          <Text style={styles.value}>
+            {userData.createdAt.toDate().toLocaleDateString()}
+          </Text>
+        </>
+      )}
+
       <Text style={styles.label}>Biografía:</Text>
-      <Text style={styles.bio}>{userData.bio || "Este usuario aún no ha escrito una bio."}</Text>
+      <Text style={styles.bio}>
+        {userData.bio || "Este usuario aún no ha escrito una bio."}
+      </Text>
     </ScrollView>
   );
 }

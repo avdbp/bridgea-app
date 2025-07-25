@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
 import { auth, db } from "../../firebase/config";
 
 export default function RegisterScreen() {
@@ -43,7 +43,7 @@ export default function RegisterScreen() {
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         name,
-        username,
+        username: username.trim().toLowerCase(),
         email,
         birthDate: birthDate.toISOString(),
         createdAt: serverTimestamp(),
@@ -51,9 +51,8 @@ export default function RegisterScreen() {
         bio: "",      // texto vacío por defecto
       });
 
-      Alert.alert("Registro exitoso", "Tu cuenta ha sido creada", [
-        { text: "Ir a Login", onPress: () => router.push("/login") },
-      ]);
+      Alert.alert("Registro exitoso", "Tu cuenta ha sido creada");
+      router.replace("/login");
     } catch (error: unknown) {
       if (error instanceof Error) {
         Alert.alert("Error", error.message);
@@ -62,35 +61,37 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Crear cuenta</Text>
-
-      <TextInput style={styles.input} placeholder="Nombre" onChangeText={setName} value={name} />
-      <TextInput style={styles.input} placeholder="Username" onChangeText={setUsername} value={username} />
-      <TextInput style={styles.input} placeholder="Email" onChangeText={setEmail} value={email} keyboardType="email-address" autoCapitalize="none" />
-      <TextInput style={styles.input} placeholder="Contraseña" onChangeText={setPassword} value={password} secureTextEntry />
-      <TextInput style={styles.input} placeholder="Confirmar contraseña" onChangeText={setConfirmPassword} value={confirmPassword} secureTextEntry />
-
-      <Pressable style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-        <Text style={styles.dateText}>Fecha de nacimiento: {birthDate.toDateString()}</Text>
-      </Pressable>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={birthDate}
-          mode="date"
-          display="default"
-          onChange={(event: any, selectedDate?: Date) => {
-            setShowDatePicker(false);
-            if (selectedDate) setBirthDate(selectedDate);
-          }}
-        />
-      )}
-
-      <Pressable style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Registrarse</Text>
-      </Pressable>
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Crear cuenta</Text>
+        <TextInput style={styles.input} placeholder="Nombre" onChangeText={setName} value={name} />
+        <TextInput style={styles.input} placeholder="Username" onChangeText={setUsername} value={username} />
+        <TextInput style={styles.input} placeholder="Email" onChangeText={setEmail} value={email} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput style={styles.input} placeholder="Contraseña" onChangeText={setPassword} value={password} secureTextEntry />
+        <TextInput style={styles.input} placeholder="Confirmar contraseña" onChangeText={setConfirmPassword} value={confirmPassword} secureTextEntry />
+        <Pressable style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.dateText}>Fecha de nacimiento: {birthDate.toDateString()}</Text>
+        </Pressable>
+        {showDatePicker && (
+          <DateTimePicker
+            value={birthDate}
+            mode="date"
+            display="default"
+            onChange={(event: any, selectedDate?: Date) => {
+              setShowDatePicker(false);
+              if (selectedDate) setBirthDate(selectedDate);
+            }}
+          />
+        )}
+        <Pressable style={styles.button} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Registrarse</Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
