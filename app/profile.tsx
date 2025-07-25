@@ -61,7 +61,6 @@ export default function ProfileScreen() {
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [1, 1],
-      base64: true,
     });
 
     if (!pickerResult.canceled && pickerResult.assets.length > 0) {
@@ -161,6 +160,13 @@ export default function ProfileScreen() {
           </>
         )}
 
+        <Pressable
+          style={styles.publicButton}
+          onPress={() => router.push(`/user/${userData.username}` as any)}
+        >
+          <Text style={styles.buttonText}>Ver mi perfil público</Text>
+        </Pressable>
+
         <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </Pressable>
@@ -203,6 +209,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 10,
     alignSelf: "flex-start",
+  },
+  publicButton: {
+    backgroundColor: "#3498db",
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 10,
+    alignSelf: "center",
   },
   buttonText: { color: "#fff", fontWeight: "bold" },
   logoutButton: {
