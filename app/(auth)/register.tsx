@@ -3,20 +3,30 @@ import { router } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+} from "react-native";
 import { auth, db } from "../../firebase/config";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [residenceCity, setResidenceCity] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [birthDate, setBirthDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !username || !email || !password || !confirmPassword) {
+    if (!name || !username || !email || !residenceCity || !password || !confirmPassword) {
       Alert.alert("Error", "Todos los campos son obligatorios.");
       return;
     }
@@ -35,20 +45,20 @@ export default function RegisterScreen() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await updateProfile(user, {
-        displayName: name,
-      });
+      await updateProfile(user, { displayName: name });
 
-      // Save extra data to Firestore
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         name,
         username: username.trim().toLowerCase(),
         email,
+        residenceCity: residenceCity.trim(),
         birthDate: birthDate.toISOString(),
         createdAt: serverTimestamp(),
-        photoURL: "", // se actualizará después si el user sube una imagen
-        bio: "",      // texto vacío por defecto
+        photoURL: "",
+        bio: "",
+        currentLocation: null,
+        showCurrentLocation: false,
       });
 
       Alert.alert("Registro exitoso", "Tu cuenta ha sido creada");
@@ -68,11 +78,14 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Crear cuenta</Text>
+
         <TextInput style={styles.input} placeholder="Nombre" onChangeText={setName} value={name} />
         <TextInput style={styles.input} placeholder="Username" onChangeText={setUsername} value={username} />
         <TextInput style={styles.input} placeholder="Email" onChangeText={setEmail} value={email} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput style={styles.input} placeholder="Ciudad de residencia" onChangeText={setResidenceCity} value={residenceCity} />
         <TextInput style={styles.input} placeholder="Contraseña" onChangeText={setPassword} value={password} secureTextEntry />
         <TextInput style={styles.input} placeholder="Confirmar contraseña" onChangeText={setConfirmPassword} value={confirmPassword} secureTextEntry />
+
         <Pressable style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
           <Text style={styles.dateText}>Fecha de nacimiento: {birthDate.toDateString()}</Text>
         </Pressable>
@@ -87,6 +100,7 @@ export default function RegisterScreen() {
             }}
           />
         )}
+
         <Pressable style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Registrarse</Text>
         </Pressable>

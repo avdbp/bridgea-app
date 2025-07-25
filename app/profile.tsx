@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -11,8 +12,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
-  TextInput
+  TextInput,
+  View,
 } from "react-native";
 import defaultProfile from "../assets/default-profile.png";
 import { auth, db } from "../firebase/config";
@@ -22,6 +25,8 @@ export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [bio, setBio] = useState("");
   const [editingBio, setEditingBio] = useState(false);
+  const [currentCity, setCurrentCity] = useState<string | null>(null);
+  const [showLocation, setShowLocation] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -34,6 +39,8 @@ export default function ProfileScreen() {
         const data = docSnap.data();
         setUserData(data);
         setBio(data.bio || "");
+        setShowLocation(data.showCurrentLocation || false);
+        setCurrentCity(data.currentLocation || null);
       }
     };
 
@@ -97,6 +104,48 @@ export default function ProfileScreen() {
     }
   };
 
+  const fetchCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permiso denegado", "No se pudo acceder a la ubicación.");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const [place] = await Location.reverseGeocodeAsync(location.coords);
+
+      const city = `${place.city || place.subregion || "Ubicación desconocida"}`;
+      setCurrentCity(city);
+
+      const userRef = doc(db, "users", auth.currentUser!.uid);
+      await updateDoc(userRef, {
+        currentLocation: city,
+        showCurrentLocation: true,
+      });
+    } catch (error) {
+      console.log("Error obteniendo ubicación:", error);
+      Alert.alert("Error", "No se pudo obtener la ubicación.");
+    }
+  };
+
+  const disableCurrentLocation = async () => {
+    setCurrentCity(null);
+    const userRef = doc(db, "users", auth.currentUser!.uid);
+    await updateDoc(userRef, {
+      showCurrentLocation: false,
+    });
+  };
+
+  const handleToggleLocation = async (value: boolean) => {
+    setShowLocation(value);
+    if (value) {
+      await fetchCurrentLocation();
+    } else {
+      await disableCurrentLocation();
+    }
+  };
+
   const handleLogout = async () => {
     await signOut(auth);
     router.replace("/login");
@@ -130,6 +179,17 @@ export default function ProfileScreen() {
 
         <Text style={styles.label}>Edad:</Text>
         <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
+
+        <Text style={styles.label}>Ciudad de residencia:</Text>
+        <Text style={styles.value}>{userData.residenceCity || "No especificada"}</Text>
+
+        <Text style={styles.label}>Ubicación actual:</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+          <Switch value={showLocation} onValueChange={handleToggleLocation} />
+          <Text style={{ marginLeft: 10 }}>
+            {showLocation && currentCity ? currentCity : "Oculto"}
+          </Text>
+        </View>
 
         <Text style={styles.label}>Fecha de registro:</Text>
         <Text style={styles.value}>
