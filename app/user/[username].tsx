@@ -105,6 +105,18 @@ export default function PublicProfileScreen() {
         </>
       )}
 
+      <Text style={styles.label}>Ciudad de residencia:</Text>
+      <Text style={styles.value}>
+        {userData.residenceCity || "No especificada"}
+      </Text>
+
+      <Text style={styles.label}>Ubicación actual:</Text>
+      <Text style={styles.value}>
+        {userData.showCurrentLocation
+          ? userData.currentLocation || "No disponible"
+          : "No disponible actualmente"}
+      </Text>
+
       <Text style={styles.label}>Biografía:</Text>
       <Text style={styles.bio}>
         {userData.bio || "Este usuario aún no ha escrito una bio."}

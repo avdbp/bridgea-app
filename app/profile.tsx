@@ -115,12 +115,12 @@ export default function ProfileScreen() {
       const location = await Location.getCurrentPositionAsync({});
       const [place] = await Location.reverseGeocodeAsync(location.coords);
 
-      const city = `${place.city || place.subregion || "Ubicación desconocida"}`;
-      setCurrentCity(city);
+      const fullLocation = `${place.city || place.subregion || "Ubicación desconocida"}, ${place.region || ""}, ${place.country || ""}`;
+      setCurrentCity(fullLocation);
 
       const userRef = doc(db, "users", auth.currentUser!.uid);
       await updateDoc(userRef, {
-        currentLocation: city,
+        currentLocation: fullLocation,
         showCurrentLocation: true,
       });
     } catch (error) {
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
           <Switch value={showLocation} onValueChange={handleToggleLocation} />
           <Text style={{ marginLeft: 10 }}>
-            {showLocation && currentCity ? currentCity : "Oculto"}
+            {showLocation && currentCity ? currentCity : "No disponible actualmente"}
           </Text>
         </View>
 
