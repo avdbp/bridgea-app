@@ -228,6 +228,10 @@ export default function ProfileScreen() {
         <Pressable style={styles.searchButton} onPress={() => router.push("/search")}>
           <Text style={styles.searchButtonText}>Buscar usuarios</Text>
         </Pressable>
+
+        <Pressable style={styles.bridgeButton} onPress={() => router.push("/create-bridge")}>
+          <Text style={styles.bridgeButtonText}>Crear puente</Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -279,6 +283,17 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   searchButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  bridgeButton: {
+    backgroundColor: "#f39c12",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    alignSelf: "center",
+  },
+  bridgeButtonText: {
     color: "#fff",
     fontWeight: "bold",
   },

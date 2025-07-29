@@ -10,7 +10,7 @@ export default function Home() {
     <View style={styles.container}>
       <Image
         source={{
-          uri: "https://res.cloudinary.com/dqph2qm49/image/upload/v1752853768/bridgea/logo-beta_uava2a.png",
+          uri: "https://res.cloudinary.com/dqph2qm49/image/upload/v1753805555/bridgea/logo-beta2_pfl5jp.png",
         }}
         style={styles.logo}
         resizeMode="contain"
