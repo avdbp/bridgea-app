@@ -53,6 +53,9 @@ export default function NotificationsScreen() {
   const [newMessageRecipient, setNewMessageRecipient] = useState('');
   const [newMessageContent, setNewMessageContent] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -118,6 +121,47 @@ export default function NotificationsScreen() {
     }
   };
 
+  const searchUsers = async (searchTerm: string) => {
+    if (!searchTerm.trim() || searchTerm.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Buscar usuarios por username o nombre
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('username', '>=', searchTerm.toLowerCase()),
+        where('username', '<=', searchTerm.toLowerCase() + '\uf8ff')
+      );
+      
+      const userSnapshot = await getDocs(usersQuery);
+      const results = userSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter((user: any) => user.id !== user?.uid) // Excluir al usuario actual
+        .slice(0, 10); // Limitar a 10 resultados
+
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Error buscando usuarios:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectUser = (selectedUser: any) => {
+    setNewMessageRecipient(selectedUser.username);
+    setShowSearchResults(false);
+    setSearchResults([]);
+  };
+
   const sendMessage = async () => {
     if (!user || !newMessageRecipient.trim() || !newMessageContent.trim()) {
       Alert.alert('Error', 'Por favor completa todos los campos');
@@ -152,6 +196,8 @@ export default function NotificationsScreen() {
       setNewMessageRecipient('');
       setNewMessageContent('');
       setShowNewMessage(false);
+      setShowSearchResults(false);
+      setSearchResults([]);
       Alert.alert('Éxito', 'Mensaje enviado correctamente');
     } catch (error) {
       console.error('Error enviando mensaje:', error);
@@ -261,13 +307,49 @@ export default function NotificationsScreen() {
         <View style={styles.newMessageModal}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Nuevo Mensaje</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Usuario destinatario (@username)"
-              value={newMessageRecipient}
-              onChangeText={setNewMessageRecipient}
-              placeholderTextColor={Colors.text.light}
-            />
+            
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Buscar usuario (@username o nombre)"
+                value={newMessageRecipient}
+                onChangeText={(text) => {
+                  setNewMessageRecipient(text);
+                  searchUsers(text);
+                }}
+                placeholderTextColor={Colors.text.light}
+              />
+              {isSearching && (
+                <View style={styles.searchingIndicator}>
+                  <Text style={styles.searchingText}>Buscando...</Text>
+                </View>
+              )}
+              
+              {showSearchResults && searchResults.length > 0 && (
+                <View style={styles.searchResults}>
+                  {searchResults.map((user) => (
+                    <Pressable
+                      key={user.id}
+                      style={styles.searchResultItem}
+                      onPress={() => selectUser(user)}
+                    >
+                      <View style={styles.userInfo}>
+                        <Text style={styles.username}>@{user.username}</Text>
+                        <Text style={styles.userName}>{user.name}</Text>
+                      </View>
+                      <Feather name="chevron-right" size={16} color={Colors.text.light} />
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              
+              {showSearchResults && searchResults.length === 0 && newMessageRecipient.length >= 2 && (
+                <View style={styles.noResults}>
+                  <Text style={styles.noResultsText}>No se encontraron usuarios</Text>
+                </View>
+              )}
+            </View>
+            
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Mensaje..."
@@ -280,7 +362,11 @@ export default function NotificationsScreen() {
             <View style={styles.modalButtons}>
               <Pressable 
                 style={[styles.button, styles.cancelButton]}
-                onPress={() => setShowNewMessage(false)}
+                onPress={() => {
+                  setShowNewMessage(false);
+                  setShowSearchResults(false);
+                  setSearchResults([]);
+                }}
               >
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </Pressable>
@@ -473,5 +559,80 @@ const styles = StyleSheet.create({
     ...TextStyles.body,
     color: Colors.text.white,
     fontWeight: '600',
+  },
+  searchContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  searchingIndicator: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: Colors.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  searchingText: {
+    ...TextStyles.caption,
+    color: Colors.text.light,
+  },
+  searchResults: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    maxHeight: 200,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  username: {
+    ...TextStyles.body,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  userName: {
+    ...TextStyles.caption,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
+  noResults: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 16,
+    zIndex: 1000,
+  },
+  noResultsText: {
+    ...TextStyles.body,
+    color: Colors.text.light,
+    textAlign: 'center',
   },
 }); 
