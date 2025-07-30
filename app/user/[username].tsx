@@ -158,6 +158,36 @@ export default function UserProfileScreen() {
           <Text style={styles.userUsername}>@{userData.username}</Text>
         </View>
 
+        <View style={styles.actionsSection}>
+          <Text style={styles.actionsTitle}>Acciones</Text>
+          <View style={styles.actionButtons}>
+            <Pressable 
+              style={styles.actionButton}
+              onPress={() => router.push({
+                pathname: '/create-bridge',
+                params: { recipientUsername: userData.username }
+              })}
+            >
+              <Feather name="send" size={20} color={Colors.text.white} />
+              <Text style={styles.actionButtonText}>Enviar Bridge</Text>
+            </Pressable>
+            
+            <Pressable 
+              style={styles.actionButton}
+              onPress={() => router.push({
+                pathname: '/notifications',
+                params: { 
+                  openMessages: 'true',
+                  recipientUsername: userData.username 
+                }
+              })}
+            >
+              <Feather name="message-circle" size={20} color={Colors.text.white} />
+              <Text style={styles.actionButtonText}>Mensaje Privado</Text>
+            </Pressable>
+          </View>
+        </View>
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Feather name="mail" size={20} color={Colors.text.primary} />
@@ -388,5 +418,41 @@ const styles = StyleSheet.create({
   backButtonText: {
     ...TextStyles.button,
     color: Colors.primary,
+  },
+  actionsSection: {
+    backgroundColor: Colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionsTitle: {
+    ...TextStyles.cardTitle,
+    color: Colors.text.primary,
+    marginBottom: 12,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  actionButtonText: {
+    ...TextStyles.body,
+    color: Colors.text.white,
+    fontWeight: '600',
   },
 });

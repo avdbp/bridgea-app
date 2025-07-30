@@ -1,8 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -41,6 +41,7 @@ interface User {
 }
 
 export default function CreateBridgeScreen() {
+  const { recipientUsername } = useLocalSearchParams<{ recipientUsername?: string }>();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedEmotion, setSelectedEmotion] = useState("");
@@ -66,6 +67,40 @@ export default function CreateBridgeScreen() {
 
     return () => unsubscribe();
   }, []);
+
+  // Cargar usuario destinatario si se proporciona un username
+  useEffect(() => {
+    const loadRecipientUser = async () => {
+      if (recipientUsername) {
+        try {
+          const usersQuery = query(
+            collection(db, 'users'),
+            where('username', '==', recipientUsername.toLowerCase())
+          );
+          const userSnapshot = await getDocs(usersQuery);
+          
+          if (!userSnapshot.empty) {
+            const userDoc = userSnapshot.docs[0];
+            const userData = userDoc.data() as any;
+            const recipientUser: User = {
+              id: userDoc.id,
+              username: userData.username,
+              displayName: userData.name,
+              photoURL: userData.photoURL,
+            };
+            
+            setSelectedUsers([recipientUser]);
+            setIsPublic(false); // Hacer el bridge privado por defecto
+            console.log("✅ Usuario destinatario cargado:", recipientUser.username);
+          }
+        } catch (error) {
+          console.error("❌ Error cargando usuario destinatario:", error);
+        }
+      }
+    };
+
+    loadRecipientUser();
+  }, [recipientUsername]);
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();

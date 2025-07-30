@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
@@ -45,9 +45,15 @@ interface Message {
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
+  const { openMessages, recipientUsername } = useLocalSearchParams<{ 
+    openMessages?: string; 
+    recipientUsername?: string 
+  }>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [activeTab, setActiveTab] = useState<'notifications' | 'messages'>('notifications');
+  const [activeTab, setActiveTab] = useState<'notifications' | 'messages'>(
+    openMessages === 'true' ? 'messages' : 'notifications'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewMessage, setShowNewMessage] = useState(false);
   const [newMessageRecipient, setNewMessageRecipient] = useState('');
@@ -110,6 +116,14 @@ export default function NotificationsScreen() {
 
     return () => clearInterval(interval);
   }, [user]);
+
+  // Cargar destinatario automáticamente si se proporciona un username
+  useEffect(() => {
+    if (recipientUsername && openMessages === 'true') {
+      setNewMessageRecipient(recipientUsername);
+      setShowNewMessage(true);
+    }
+  }, [recipientUsername, openMessages]);
 
   const markAsRead = async (notificationId: string) => {
     try {
