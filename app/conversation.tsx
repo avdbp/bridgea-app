@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Colors } from '../constants/Colors';
 import { TextStyles } from '../constants/Typography';
@@ -53,48 +53,69 @@ export default function ConversationScreen() {
   useEffect(() => {
     if (!user || !otherUserId) return;
 
-    const unsubscribe = onSnapshot(
-      query(
-        collection(db, 'messages'),
-        where('senderId', 'in', [user.uid, otherUserId]),
-        where('recipientId', 'in', [user.uid, otherUserId]),
-        orderBy('createdAt', 'asc')
-      ),
-      (snapshot) => {
-        const conversationMessages = snapshot.docs
-          .map(doc => ({
+          // Usar polling temporal hasta que se configuren los índices
+      const fetchMessages = async () => {
+        try {
+          const query1 = query(
+            collection(db, 'messages'),
+            where('senderId', '==', user.uid),
+            where('recipientId', '==', otherUserId)
+          );
+          
+          const query2 = query(
+            collection(db, 'messages'),
+            where('senderId', '==', otherUserId),
+            where('recipientId', '==', user.uid)
+          );
+
+          const [snapshot1, snapshot2] = await Promise.all([
+            getDocs(query1),
+            getDocs(query2)
+          ]);
+
+          const messages1 = snapshot1.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-          }))
-          .filter((msg: any) => 
-            (msg.senderId === user.uid && msg.recipientId === otherUserId) ||
-            (msg.senderId === otherUserId && msg.recipientId === user.uid)
-          ) as Message[];
+          })) as Message[];
 
-        setMessages(conversationMessages);
-        setLoading(false);
+          const messages2 = snapshot2.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Message[];
 
-        // Marcar mensajes como leídos si los recibió el usuario actual
-        conversationMessages.forEach((msg) => {
-          if (msg.recipientId === user.uid && !msg.read) {
-            updateDoc(doc(db, 'messages', msg.id), { read: true });
-          }
-        });
+          const conversationMessages = [...messages1, ...messages2]
+            .sort((a, b) => {
+              const aTime = a.createdAt?.toDate?.() || new Date(0);
+              const bTime = b.createdAt?.toDate?.() || new Date(0);
+              return aTime.getTime() - bTime.getTime();
+            });
 
-        // Scroll al final después de un breve delay
-        setTimeout(() => {
-          if (flatListRef.current && conversationMessages.length > 0) {
-            flatListRef.current.scrollToEnd({ animated: true });
-          }
-        }, 100);
-      },
-      (error) => {
-        console.error('Error cargando conversación:', error);
-        setLoading(false);
-      }
-    );
+          setMessages(conversationMessages);
+          setLoading(false);
 
-    return () => unsubscribe();
+          // Marcar mensajes como leídos si los recibió el usuario actual
+          conversationMessages.forEach((msg) => {
+            if (msg.recipientId === user.uid && !msg.read) {
+              updateDoc(doc(db, 'messages', msg.id), { read: true });
+            }
+          });
+
+          // Scroll al final después de un breve delay
+          setTimeout(() => {
+            if (flatListRef.current && conversationMessages.length > 0) {
+              flatListRef.current.scrollToEnd({ animated: true });
+            }
+          }, 100);
+        } catch (error) {
+          console.error('Error cargando conversación:', error);
+          setLoading(false);
+        }
+      };
+
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 5000); // Polling cada 5 segundos
+
+             return () => clearInterval(interval);
   }, [user, otherUserId]);
 
   const sendMessage = async () => {

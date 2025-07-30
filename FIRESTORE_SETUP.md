@@ -51,6 +51,20 @@ El error que estás viendo indica que Firestore necesita índices compuestos par
   - `recipientId` (Ascending)
   - `senderId` (Ascending)
 
+#### **Índice 7: Mensajes por senderId, recipientId y createdAt**
+- **Colección:** `messages`
+- **Campos:**
+  - `senderId` (Ascending)
+  - `recipientId` (Ascending)
+  - `createdAt` (Ascending)
+
+#### **Índice 8: Mensajes por recipientId, senderId y createdAt**
+- **Colección:** `messages`
+- **Campos:**
+  - `recipientId` (Ascending)
+  - `senderId` (Ascending)
+  - `createdAt` (Ascending)
+
 ### **3. Usar el Archivo de Configuración (Opcional):**
 
 Si tienes Firebase CLI configurado, puedes usar el archivo `firestore.indexes.json`:
@@ -135,7 +149,26 @@ firebase deploy --only firestore:indexes
     { "fieldPath": "senderId", "order": "ASCENDING" }
   ]
 }
-```
+
+// Consulta: where('senderId', '==', userId) && where('recipientId', '==', otherUserId) && orderBy('createdAt', 'asc')
+{
+  "collectionGroup": "messages",
+  "fields": [
+    { "fieldPath": "senderId", "order": "ASCENDING" },
+    { "fieldPath": "recipientId", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "ASCENDING" }
+  ]
+}
+
+// Consulta: where('recipientId', '==', userId) && where('senderId', '==', otherUserId) && orderBy('createdAt', 'asc')
+{
+  "collectionGroup": "messages",
+  "fields": [
+    { "fieldPath": "recipientId", "order": "ASCENDING" },
+    { "fieldPath": "senderId", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "ASCENDING" }
+  ]
+}
 
 ## 🚀 **Después de Configurar Índices:**
 
