@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
@@ -13,7 +14,7 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    View
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
@@ -173,7 +174,7 @@ export default function ProfileScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.pageTitle}>Mi Perfil 👤</Text>
+          <Text style={styles.pageTitle}>Mi Perfil</Text>
 
           <View style={styles.profileSection}>
             <Image
@@ -185,6 +186,7 @@ export default function ProfileScreen() {
               style={styles.profileImage}
             />
             <Pressable style={styles.changePhotoButton} onPress={handlePickImage}>
+              <Feather name="camera" size={16} color={Colors.text.white} />
               <Text style={styles.changePhotoText}>Cambiar foto</Text>
             </Pressable>
           </View>
@@ -208,7 +210,7 @@ export default function ProfileScreen() {
               <View style={styles.valueContainer}>
                 <Text style={styles.value}>{userData?.name || "No especificado"}</Text>
                 <Pressable style={styles.editButton} onPress={() => setEditingName(true)}>
-                  <Text style={styles.editButtonText}>✏️</Text>
+                  <Feather name="edit-3" size={16} color={Colors.primary} />
                 </Pressable>
               </View>
             )}
@@ -243,7 +245,7 @@ export default function ProfileScreen() {
               <View style={styles.valueContainer}>
                 <Text style={styles.value}>{userData?.residenceCity || "No especificada"}</Text>
                 <Pressable style={styles.editButton} onPress={() => setEditingResidenceCity(true)}>
-                  <Text style={styles.editButtonText}>✏️</Text>
+                  <Feather name="edit-3" size={16} color={Colors.primary} />
                 </Pressable>
               </View>
             )}
@@ -269,7 +271,7 @@ export default function ProfileScreen() {
               <View style={styles.valueContainer}>
                 <Text style={styles.value}>{userData?.bio || "No especificada"}</Text>
                 <Pressable style={styles.editButton} onPress={() => setEditingBio(true)}>
-                  <Text style={styles.editButtonText}>✏️</Text>
+                  <Feather name="edit-3" size={16} color={Colors.primary} />
                 </Pressable>
               </View>
             )}
@@ -283,6 +285,7 @@ export default function ProfileScreen() {
           </View>
 
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Feather name="log-out" size={18} color={Colors.text.white} />
             <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
           </Pressable>
         </ScrollView>
@@ -334,6 +337,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   changePhotoText: {
     ...TextStyles.button,
@@ -367,9 +373,6 @@ const styles = StyleSheet.create({
   },
   editButton: {
     padding: 8,
-  },
-  editButtonText: {
-    fontSize: 18,
   },
   editContainer: {
     gap: 12,
@@ -405,6 +408,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flexDirection: "row",
+    gap: 8,
   },
   logoutButtonText: {
     ...TextStyles.button,

@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import React, { useState } from "react";
@@ -67,7 +68,10 @@ export default function SearchScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Buscar Usuarios 🔍</Text>
+          <View style={styles.header}>
+            <Feather name="search" size={24} color={Colors.primary} />
+            <Text style={styles.title}>Buscar Usuarios</Text>
+          </View>
           
           <TextInput
             style={styles.input}
@@ -79,6 +83,7 @@ export default function SearchScreen() {
           />
           
           <Pressable style={styles.searchButton} onPress={handleSearch} disabled={loading}>
+            <Feather name="search" size={18} color={Colors.text.white} />
             <Text style={styles.searchButtonText}>
               {loading ? "Buscando..." : "Buscar"}
             </Text>
@@ -93,7 +98,10 @@ export default function SearchScreen() {
 
           {searchResults.length > 0 && (
             <View style={styles.resultsContainer}>
-              <Text style={styles.resultsTitle}>Resultados encontrados:</Text>
+              <View style={styles.resultsHeader}>
+                <Feather name="users" size={20} color={Colors.text.primary} />
+                <Text style={styles.resultsTitle}>Resultados encontrados:</Text>
+              </View>
               {searchResults.map((user) => (
                 <Pressable
                   key={user.id}
@@ -112,6 +120,7 @@ export default function SearchScreen() {
                     <Text style={styles.userName}>{user.name}</Text>
                     <Text style={styles.userUsername}>@{user.username}</Text>
                   </View>
+                  <Feather name="chevron-right" size={20} color={Colors.text.light} />
                 </Pressable>
               ))}
             </View>
@@ -119,6 +128,7 @@ export default function SearchScreen() {
 
           {searchResults.length === 0 && !loading && searchText.trim() !== "" && (
             <View style={styles.noResultsContainer}>
+              <Feather name="search" size={64} color={Colors.text.light} />
               <Text style={styles.noResultsText}>No se encontraron usuarios</Text>
               <Text style={styles.noResultsSubtext}>
                 Intenta con un username diferente
@@ -141,10 +151,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 24,
+  },
   title: {
     ...TextStyles.largeTitle,
-    textAlign: "center",
-    marginBottom: 24,
     color: Colors.text.primary,
   },
   input: {
@@ -169,6 +183,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flexDirection: "row",
+    gap: 8,
   },
   searchButtonText: {
     ...TextStyles.button,
@@ -188,9 +204,14 @@ const styles = StyleSheet.create({
   resultsContainer: {
     flex: 1,
   },
+  resultsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 16,
+  },
   resultsTitle: {
     ...TextStyles.cardTitle,
-    marginBottom: 16,
     color: Colors.text.primary,
   },
   resultItem: {
@@ -231,6 +252,7 @@ const styles = StyleSheet.create({
   noResultsText: {
     ...TextStyles.cardTitle,
     textAlign: "center",
+    marginTop: 16,
     marginBottom: 8,
     color: Colors.text.primary,
   },

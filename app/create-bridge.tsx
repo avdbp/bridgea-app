@@ -1,25 +1,21 @@
+import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, doc, getDocs, setDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
 import {
-    collection,
-    doc,
-    getDocs,
-    query,
-    setDoc,
-    where,
-} from "firebase/firestore";
-import React, { useState } from "react";
-import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BottomNav from "../components/BottomNav";
@@ -28,103 +24,165 @@ import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
 import { testCloudinaryUpload, uploadBridgeImageToCloudinary } from "../services/cloudinaryService";
 
-const EMOTIONS = ["❤️ Amor", "😊 Felicidad", "😢 Nostalgia", "💪 Fortaleza", "🎉 Celebración"];
+const EMOTIONS = [
+  { name: "Amor", icon: "heart" },
+  { name: "Felicidad", icon: "smile" },
+  { name: "Nostalgia", icon: "clock" },
+  { name: "Fortaleza", icon: "zap" },
+  { name: "Celebración", icon: "gift" },
+];
+
+interface User {
+  id: string;
+  username: string;
+  displayName: string; // Este campo se mapea desde 'name' en Firestore
+  photoURL?: string;
+}
 
 export default function CreateBridgeScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [emotion, setEmotion] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [selectedEmotion, setSelectedEmotion] = useState("");
   const [image, setImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Estados para selección de usuarios
+  const [showUserSelector, setShowUserSelector] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  const handleUserSearch = async () => {
-    const queryText = searchText.trim().toLowerCase();
-    if (!queryText) return;
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("🔐 Estado de autenticación cambiado:", user ? `Usuario: ${user.uid}` : "No autenticado");
+      if (!user) {
+        router.replace("/");
+      }
+    });
 
-    setLoading(true);
+    return () => unsubscribe();
+  }, []);
 
-    const endValue = queryText.replace(/.$/, (c) =>
-      String.fromCharCode(c.charCodeAt(0) + 1)
-    );
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Permiso denegado", "Se necesita acceso a tus fotos.");
+      return;
+    }
 
-    try {
-      const q = query(
-        collection(db, "users"),
-        where("username", ">=", queryText),
-        where("username", "<", endValue)
-      );
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    });
 
-      const snapshot = await getDocs(q);
-      const results = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setSearchResults(results);
-    } catch (err) {
-      console.error("❌ Error buscando usuarios:", err);
-      setSearchResults([]);
-    } finally {
-      setLoading(false);
+    if (!pickerResult.canceled && pickerResult.assets.length > 0) {
+      console.log("📸 Imagen seleccionada:", pickerResult.assets[0].uri);
+      setImage(pickerResult.assets[0].uri);
     }
   };
 
-  const toggleUserSelection = (user: any) => {
-    const exists = selectedUsers.find((u) => u.id === user.id);
-    if (exists) {
-      setSelectedUsers(selectedUsers.filter((u) => u.id !== user.id));
+  const searchUsers = async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setUsers([]);
+      return;
+    }
+
+    // Verificar autenticación
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.error("❌ No hay usuario autenticado");
+      return;
+    }
+
+    setSearching(true);
+    try {
+      console.log("🔍 Búsqueda:", searchQuery);
+      
+      const usersRef = collection(db, "users");
+      const currentUserId = currentUser.uid;
+      
+      // Obtener todos los usuarios
+      const allUsersSnapshot = await getDocs(usersRef);
+      console.log("🔍 Total usuarios:", allUsersSnapshot.size);
+      
+      const foundUsers: User[] = [];
+      
+      allUsersSnapshot.forEach((docSnapshot) => {
+        if (docSnapshot.id === currentUserId) return;
+        
+        const userData = docSnapshot.data() as any;
+        const username = userData.username || "";
+        const name = userData.name || userData.displayName || "";
+        
+        // Búsqueda simple
+        if (username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            name.toLowerCase().includes(searchQuery.toLowerCase())) {
+          foundUsers.push({
+            id: docSnapshot.id,
+            username: username,
+            displayName: name,
+            photoURL: userData.photoURL || "",
+          });
+        }
+      });
+      
+      console.log(`🔍 Encontrados: ${foundUsers.length} usuarios`);
+      setUsers(foundUsers);
+    } catch (error) {
+      console.error("❌ Error en búsqueda:", error);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleUserSearch = (text: string) => {
+    setSearchQuery(text);
+    
+    // Buscar inmediatamente cuando se escribe
+    if (text.trim().length >= 1) {
+      searchUsers(text);
+    } else {
+      setUsers([]);
+    }
+  };
+
+  const toggleUserSelection = (user: User) => {
+    const isSelected = selectedUsers.some(u => u.id === user.id);
+    if (isSelected) {
+      setSelectedUsers(selectedUsers.filter(u => u.id !== user.id));
     } else {
       setSelectedUsers([...selectedUsers, user]);
     }
   };
 
-  const handlePickImage = async () => {
-    try {
-      console.log("📸 Iniciando selección de imagen...");
-      
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert("Permiso denegado", "Se necesita acceso a tus fotos.");
-        return;
-      }
+  const removeSelectedUser = (userId: string) => {
+    setSelectedUsers(selectedUsers.filter(u => u.id !== userId));
+  };
 
-      console.log("✅ Permisos concedidos, abriendo galería...");
-
-      const pickerResult = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      });
-
-      console.log("📱 Resultado del picker:", pickerResult);
-
-      if (!pickerResult.canceled && pickerResult.assets.length > 0) {
-        const selectedImage = pickerResult.assets[0];
-        console.log("🖼️ Imagen seleccionada:", selectedImage);
-        setImage(selectedImage.uri);
-      } else {
-        console.log("❌ No se seleccionó ninguna imagen");
-      }
-    } catch (error) {
-      console.error("❌ Error al seleccionar imagen:", error);
-      Alert.alert("Error", "No se pudo seleccionar la imagen. Inténtalo de nuevo.");
+  const handleVisibilityChange = (isPublicBridge: boolean) => {
+    setIsPublic(isPublicBridge);
+    if (!isPublicBridge) {
+      setShowUserSelector(true);
+      setSelectedUsers([]);
+    } else {
+      setShowUserSelector(false);
+      setSelectedUsers([]);
     }
   };
 
   const handleSubmit = async () => {
-    if (!title || !description || !emotion) {
-      Alert.alert("Campos incompletos", "Por favor llena todos los campos requeridos.");
+    if (!title.trim() || !description.trim() || !selectedEmotion) {
+      Alert.alert("Error", "Por favor completa todos los campos.");
       return;
     }
 
-    if (isPrivate && selectedUsers.length === 0) {
-      Alert.alert("Falta destinatario", "Selecciona al menos un usuario para enviar el puente.");
+    if (!isPublic && selectedUsers.length === 0) {
+      Alert.alert("Error", "Por favor selecciona al menos un usuario para enviar el bridge privado.");
       return;
     }
 
@@ -132,7 +190,7 @@ export default function CreateBridgeScreen() {
       console.log("🚀 Iniciando creación de bridge...");
       const senderId = auth.currentUser?.uid;
       if (!senderId) {
-        Alert.alert("Error", "No estás autenticado.");
+        Alert.alert("Error", "No se pudo identificar al usuario.");
         return;
       }
 
@@ -140,80 +198,108 @@ export default function CreateBridgeScreen() {
       if (image) {
         console.log("📤 Subiendo imagen a Cloudinary...");
         setUploadingImage(true);
-        
+
         try {
           // Probar primero con la función de prueba
           console.log("🧪 Probando subida alternativa...");
           let uploadResult = await testCloudinaryUpload(image);
-          
+
           if (!uploadResult) {
             console.log("🔄 Probando con función original...");
             uploadResult = await uploadBridgeImageToCloudinary(image);
           }
-          
+
           console.log("📤 Resultado de subida:", uploadResult);
-          
+
           if (!uploadResult) {
             Alert.alert("Error", "No se pudo subir la imagen. Inténtalo de nuevo.");
-            setUploadingImage(false);
             return;
           }
           imageUrl = uploadResult;
           console.log("✅ Imagen subida exitosamente:", imageUrl);
         } catch (uploadError) {
-          console.error("❌ Error específico al subir imagen:", uploadError);
-          Alert.alert("Error", "No se pudo subir la imagen. Inténtalo de nuevo.");
-          setUploadingImage(false);
-          return;
+          console.error("❌ Error al subir imagen:", uploadError);
+          // No mostrar alerta, solo continuar sin imagen
+          console.log("⚠️ Continuando sin imagen debido a error de subida");
+          imageUrl = "";
         } finally {
           setUploadingImage(false);
         }
       }
 
-      console.log("💾 Guardando bridge en Firestore...");
-      const bridgeId = `${senderId}_${Date.now()}`;
-      const commonData = {
-        title,
-        description,
-        emotion,
-        senderId,
+      setSubmitting(true);
+
+      const bridgeData = {
+        title: title.trim(),
+        description: description.trim(),
+        emotion: selectedEmotion,
         imageUrl,
+        isPublic,
+        senderId,
         createdAt: new Date(),
+        recipientIds: isPublic ? [] : selectedUsers.map(u => u.id),
       };
 
-      if (isPrivate) {
-        console.log("🔒 Creando bridge privado para", selectedUsers.length, "usuarios");
-        for (const user of selectedUsers) {
-          await setDoc(doc(collection(db, "bridges"), `${bridgeId}_${user.id}`), {
-            ...commonData,
-            recipientId: user.id,
-            isPublic: false,
-          });
-        }
-      } else {
-        console.log("🌍 Creando bridge público");
-        await setDoc(doc(collection(db, "bridges"), bridgeId), {
-          ...commonData,
-          isPublic: true,
-        });
-      }
+      console.log("💾 Guardando bridge en Firestore...");
+      const bridgeRef = doc(collection(db, "bridges"));
+      await setDoc(bridgeRef, bridgeData);
 
-      console.log("✅ Bridge creado exitosamente");
-      Alert.alert("¡Listo!", "Tu puente ha sido creado exitosamente.");
-      
-      // Limpiar formulario
-      setTitle("");
-      setDescription("");
-      setEmotion("");
-      setSearchText("");
-      setSearchResults([]);
-      setSelectedUsers([]);
-      setIsPrivate(false);
-      setImage(null);
+      console.log("✅ Bridge creado exitosamente!");
+      Alert.alert("¡Éxito!", "Tu bridge ha sido creado correctamente.", [
+        {
+          text: "Ver mis bridges",
+          onPress: () => router.push("/bridges"),
+        },
+        {
+          text: "Crear otro",
+          onPress: () => {
+            setTitle("");
+            setDescription("");
+            setSelectedEmotion("");
+            setImage(null);
+            setSelectedUsers([]);
+            setShowUserSelector(false);
+          },
+        },
+      ]);
     } catch (error) {
-      console.error("❌ Error al crear el puente:", error);
-      Alert.alert("Error", "Hubo un problema al crear el puente. Inténtalo de nuevo.");
+      console.error("❌ Error al crear bridge:", error);
+      // Solo mostrar error en consola, no en pantalla
+      console.log("⚠️ Error en creación de bridge:", error);
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const renderUserItem = ({ item }: { item: User }) => {
+    const isSelected = selectedUsers.some(u => u.id === item.id);
+    
+    return (
+      <Pressable
+        style={[styles.userItem, isSelected && styles.selectedUserItem]}
+        onPress={() => toggleUserSelection(item)}
+      >
+        <View style={styles.userInfo}>
+          <Image
+            source={
+              item.photoURL
+                ? { uri: item.photoURL }
+                : require("../assets/default-profile.png")
+            }
+            style={styles.userAvatar}
+          />
+          <View style={styles.userDetails}>
+            <Text style={styles.userDisplayName}>{item.displayName}</Text>
+            <Text style={styles.userUsername}>@{item.username}</Text>
+          </View>
+        </View>
+        <Feather
+          name={isSelected ? "check-circle" : "circle"}
+          size={20}
+          color={isSelected ? Colors.primary : Colors.text.light}
+        />
+      </Pressable>
+    );
   };
 
   return (
@@ -221,117 +307,297 @@ export default function CreateBridgeScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={80}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.pageTitle}>Crear Bridge 🌉</Text>
-
-          <Text style={styles.label}>Título del puente</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Ej: Recuerdo especial"
-          />
-
-          <Text style={styles.label}>Descripción emocional</Text>
-          <TextInput
-            style={[styles.input, { height: 80 }]}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            placeholder="Describe el momento o la emoción..."
-          />
-
-          <Text style={styles.label}>Elige una emoción</Text>
-          {EMOTIONS.map((e) => (
-            <Pressable
-              key={e}
-              style={[styles.emotionButton, emotion === e && styles.emotionSelected]}
-              onPress={() => setEmotion(e)}
-            >
-              <Text style={[styles.emotionText, emotion === e && { color: Colors.text.white }]}>{e}</Text>
-            </Pressable>
-          ))}
-
-          <View style={styles.switchContainer}>
-            <Text style={styles.label}>Público</Text>
-            <Switch
-              value={isPrivate}
-              onValueChange={setIsPrivate}
-              thumbColor={isPrivate ? Colors.primary : Colors.neutral.lightGray}
-              trackColor={{ false: Colors.neutral.lightGray, true: Colors.neutral.light }}
-            />
-            <Text style={styles.label}>Privado</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Feather name="plus-circle" size={24} color={Colors.primary} />
+            <Text style={styles.pageTitle}>Crear Bridge</Text>
           </View>
 
-          {isPrivate && (
-            <>
-              <Text style={styles.label}>Buscar usuario destinatario</Text>
-              <TextInput
-                style={styles.input}
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholder="Escribe un username"
-                autoCapitalize="none"
-              />
-              <Pressable style={styles.searchButton} onPress={handleUserSearch} disabled={loading}>
-                <Text style={styles.searchButtonText}>
-                  {loading ? "Buscando..." : "Buscar"}
-                </Text>
-              </Pressable>
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Feather name="edit-3" size={20} color={Colors.text.primary} />
+              <Text style={styles.label}>Título:</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Título de tu bridge"
+              placeholderTextColor={Colors.text.light}
+              maxLength={100}
+            />
+          </View>
 
-              {searchResults.length > 0 && (
-                <View style={styles.suggestionBox}>
-                  <Text style={styles.label}>Usuarios encontrados:</Text>
-                  {searchResults.map((user) => (
-                    <Pressable
-                      key={user.id}
-                      style={styles.suggestionText}
-                      onPress={() => toggleUserSelection(user)}
-                    >
-                      <Text style={[
-                        styles.suggestionText,
-                        selectedUsers.find((u) => u.id === user.id) && { fontWeight: "bold", color: Colors.primary }
-                      ]}>
-                        {selectedUsers.find((u) => u.id === user.id) ? "✅ " : "⬜ "}
-                        @{user.username} - {user.name}
-                      </Text>
-                    </Pressable>
-                  ))}
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Feather name="file-text" size={20} color={Colors.text.primary} />
+              <Text style={styles.label}>Descripción:</Text>
+            </View>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Describe tu bridge..."
+              placeholderTextColor={Colors.text.light}
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Feather name="heart" size={20} color={Colors.text.primary} />
+              <Text style={styles.label}>Emoción:</Text>
+            </View>
+            <View style={styles.emotionsContainer}>
+              {EMOTIONS.map((emotion) => (
+                <Pressable
+                  key={emotion.name}
+                  style={[
+                    styles.emotionButton,
+                    selectedEmotion === emotion.name && styles.selectedEmotion,
+                  ]}
+                  onPress={() => setSelectedEmotion(emotion.name)}
+                >
+                  <Feather 
+                    name={emotion.icon as any} 
+                    size={16} 
+                    color={selectedEmotion === emotion.name ? Colors.text.white : Colors.text.primary} 
+                  />
+                  <Text
+                    style={[
+                      styles.emotionText,
+                      selectedEmotion === emotion.name && styles.selectedEmotionText,
+                    ]}
+                  >
+                    {emotion.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.labelContainer}>
+              <Feather name="image" size={20} color={Colors.text.primary} />
+              <Text style={styles.label}>Imagen (opcional):</Text>
+            </View>
+            <Pressable
+              style={styles.imageButton}
+              onPress={handlePickImage}
+              disabled={uploadingImage}
+            >
+              {image ? (
+                <View style={styles.imagePreview}>
+                  <Image source={{ uri: image }} style={styles.previewImage} />
+                  <Pressable
+                    style={styles.removeImageButton}
+                    onPress={() => setImage(null)}
+                  >
+                    <Feather name="x" size={16} color={Colors.text.white} />
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Feather name="image" size={32} color={Colors.text.light} />
+                  <Text style={styles.imagePlaceholderText}>
+                    {uploadingImage ? "Subiendo..." : "Seleccionar imagen"}
+                  </Text>
                 </View>
               )}
+            </Pressable>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.visibilityContainer}>
+              <View style={styles.visibilityInfo}>
+                <Feather 
+                  name={isPublic ? "globe" : "lock"} 
+                  size={20} 
+                  color={Colors.text.primary} 
+                />
+                <Text style={styles.label}>Visibilidad:</Text>
+              </View>
+              <View style={styles.visibilityButtons}>
+                <Pressable
+                  style={[
+                    styles.visibilityButton,
+                    isPublic && styles.activeVisibilityButton,
+                  ]}
+                  onPress={() => handleVisibilityChange(true)}
+                >
+                  <Feather name="globe" size={16} color={isPublic ? Colors.text.white : Colors.primary} />
+                  <Text style={[styles.visibilityText, isPublic && styles.activeVisibilityText]}>
+                    Público
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.visibilityButton,
+                    !isPublic && styles.activeVisibilityButton,
+                  ]}
+                  onPress={() => handleVisibilityChange(false)}
+                >
+                  <Feather name="lock" size={16} color={!isPublic ? Colors.text.white : Colors.primary} />
+                  <Text style={[styles.visibilityText, !isPublic && styles.activeVisibilityText]}>
+                    Privado
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+
+          {showUserSelector && (
+            <View style={styles.section}>
+              <View style={styles.labelContainer}>
+                <Feather name="users" size={20} color={Colors.text.primary} />
+                <Text style={styles.label}>Seleccionar destinatarios:</Text>
+              </View>
+              
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={handleUserSearch}
+                placeholder="Buscar usuarios por username..."
+                placeholderTextColor={Colors.text.light}
+              />
 
               {selectedUsers.length > 0 && (
-                <View style={styles.suggestionBox}>
-                  <Text style={styles.label}>Destinatarios seleccionados:</Text>
-                  {selectedUsers.map((user) => (
-                    <Text key={user.id} style={styles.suggestionText}>
-                      ✅ @{user.username} - {user.name}
-                    </Text>
-                  ))}
+                <View style={styles.selectedUsersContainer}>
+                  <Text style={styles.selectedUsersTitle}>Usuarios seleccionados:</Text>
+                  <View style={styles.selectedUsersList}>
+                    {selectedUsers.map((user) => (
+                      <View key={user.id} style={styles.selectedUserTag}>
+                        <Text style={styles.selectedUserText}>{user.displayName}</Text>
+                        <Pressable
+                          style={styles.removeUserButton}
+                          onPress={() => removeSelectedUser(user.id)}
+                        >
+                          <Feather name="x" size={14} color={Colors.text.white} />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
                 </View>
               )}
-            </>
+
+              {searching ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <Text style={styles.loadingText}>Buscando usuarios...</Text>
+                </View>
+              ) : (
+                <View style={styles.usersListContainer}>
+                  <View style={styles.usersList}>
+                    {users.length === 0 ? (
+                      searchQuery ? (
+                        <View style={styles.emptyContainer}>
+                          <Text style={styles.emptyText}>No se encontraron usuarios</Text>
+                          <Pressable 
+                            style={styles.testButton}
+                            onPress={async () => {
+                              console.log("🧪 === DIAGNÓSTICO COMPLETO ===");
+                              
+                              // 1. Verificar autenticación
+                              const currentUser = auth.currentUser;
+                              console.log("🧪 1. Usuario autenticado:", currentUser ? currentUser.uid : "NO");
+                              
+                              if (!currentUser) {
+                                console.log("🧪 ❌ No hay usuario autenticado");
+                                Alert.alert("Error", "Debes estar autenticado para usar esta función.");
+                                return;
+                              }
+                              
+                              try {
+                                // 2. Verificar configuración de Firebase
+                                console.log("🧪 2. Configuración de Firebase:", {
+                                  projectId: db.app.options.projectId,
+                                  authDomain: db.app.options.authDomain
+                                });
+                                
+                                // 3. Probar conexión básica
+                                const usersRef = collection(db, "users");
+                                console.log("🧪 3. Referencia a colección creada");
+                                
+                                // 4. Intentar obtener datos
+                                console.log("🧪 4. Intentando obtener datos...");
+                                const snapshot = await getDocs(usersRef);
+                                console.log("🧪 ✅ Conexión exitosa. Total de usuarios:", snapshot.size);
+                                
+                                // 5. Mostrar datos de ejemplo
+                                console.log("🧪 5. Datos de usuarios:");
+                                snapshot.forEach((doc) => {
+                                  const data = doc.data();
+                                  console.log("🧪   - Usuario:", { 
+                                    id: doc.id, 
+                                    username: data.username, 
+                                    name: data.name,
+                                    email: data.email 
+                                  });
+                                });
+                                
+                                // 6. Verificar reglas de seguridad
+                                console.log("🧪 6. Verificando reglas de seguridad...");
+                                try {
+                                  // Intentar escribir un documento de prueba (debería fallar si las reglas están bien)
+                                  const testRef = doc(collection(db, "test"));
+                                  await setDoc(testRef, { test: true });
+                                  console.log("🧪 ⚠️ Las reglas de seguridad podrían estar muy permisivas");
+                                } catch (error) {
+                                  console.log("🧪 ✅ Reglas de seguridad funcionando correctamente");
+                                }
+                                
+                                // 7. Ejecutar búsqueda de prueba
+                                console.log("🧪 7. Ejecutando búsqueda de prueba...");
+                                searchUsers("test");
+                                
+                              } catch (error) {
+                                console.error("🧪 ❌ Error en diagnóstico:", error);
+                                console.error("🧪 Detalles del error:", {
+                                  message: error instanceof Error ? error.message : 'Unknown error',
+                                  code: (error as any)?.code,
+                                  stack: error instanceof Error ? error.stack : undefined,
+                                });
+                                Alert.alert("Error de conexión", `No se pudo conectar a la base de datos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                              }
+                            }}
+                          >
+                            <Text style={styles.testButtonText}>Diagnóstico completo</Text>
+                          </Pressable>
+                        </View>
+                      ) : (
+                        <Text style={styles.emptyText}>Busca usuarios para seleccionar</Text>
+                      )
+                    ) : (
+                      users.map((user) => (
+                        <View key={user.id}>
+                          {renderUserItem({ item: user })}
+                        </View>
+                      ))
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
           )}
 
-          {!isPrivate && (
-            <Text style={styles.publicInfo}>
-              🌐 Este puente será <Text style={{ fontWeight: "bold" }}>público</Text> y lo podrá ver cualquier usuario.
-            </Text>
-          )}
-
-          <Text style={styles.label}>Imagen (opcional)</Text>
-          <Pressable style={styles.imageButton} onPress={handlePickImage} disabled={uploadingImage}>
-            <Text style={styles.imageButtonText}>
-              {uploadingImage ? "Subiendo imagen..." : "Seleccionar imagen"}
-            </Text>
-          </Pressable>
-          {image && <Image source={{ uri: image }} style={styles.preview} />}
-
-          <Pressable style={styles.submitButton} onPress={handleSubmit} disabled={uploadingImage}>
+          <Pressable
+            style={[
+              styles.submitButton,
+              (submitting || uploadingImage) && styles.disabledButton,
+            ]}
+            onPress={handleSubmit}
+            disabled={submitting || uploadingImage}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color={Colors.text.white} />
+            ) : (
+              <Feather name="send" size={18} color={Colors.text.white} />
+            )}
             <Text style={styles.submitButtonText}>
-              {uploadingImage ? "Subiendo..." : "Crear puente"}
+              {submitting ? "Creando..." : "Crear Bridge"}
             </Text>
           </Pressable>
         </ScrollView>
@@ -350,113 +616,293 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 100,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 24,
+  },
   pageTitle: {
     ...TextStyles.largeTitle,
-    textAlign: "center",
-    marginBottom: 20,
+    color: Colors.text.primary,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  labelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
   },
   label: {
     ...TextStyles.body,
     fontWeight: "bold",
-    marginTop: 15,
-    marginBottom: 5,
     color: Colors.text.primary,
   },
   input: {
     borderWidth: 1,
     borderColor: Colors.neutral.lightGray,
-    borderRadius: 8,
-    padding: 12,
+    padding: 16,
+    borderRadius: 12,
     backgroundColor: Colors.card,
     fontSize: 16,
     fontFamily: TextStyles.body.fontFamily,
+    color: Colors.text.primary,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  emotionsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
   emotionButton: {
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 5,
-    backgroundColor: Colors.card,
-  },
-  emotionSelected: {
-    backgroundColor: Colors.primary,
-  },
-  emotionText: {
-    color: Colors.text.primary,
-    fontWeight: "bold",
-    fontSize: 16,
-    fontFamily: TextStyles.body.fontFamily,
-  },
-  switchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 20,
-    marginBottom: 10,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.neutral.lightGray,
+    backgroundColor: Colors.card,
+  },
+  selectedEmotion: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  emotionText: {
+    ...TextStyles.body,
+    color: Colors.text.primary,
+  },
+  selectedEmotionText: {
+    color: Colors.text.white,
+    fontWeight: "bold",
   },
   imageButton: {
-    backgroundColor: Colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 5,
+    borderWidth: 2,
+    borderColor: Colors.neutral.lightGray,
+    borderStyle: "dashed",
+    borderRadius: 12,
+    padding: 20,
     alignItems: "center",
+    backgroundColor: Colors.card,
   },
-  imageButtonText: {
-    color: Colors.text.white,
-    fontWeight: "600",
-    fontSize: 16,
-    fontFamily: TextStyles.button.fontFamily,
+  imagePlaceholder: {
+    alignItems: "center",
+    gap: 8,
   },
-  preview: {
+  imagePlaceholderText: {
+    ...TextStyles.body,
+    color: Colors.text.light,
+  },
+  imagePreview: {
+    position: "relative",
     width: "100%",
     height: 200,
-    marginTop: 10,
-    borderRadius: 10,
   },
-  searchButton: {
-    backgroundColor: Colors.primary,
-    padding: 12,
+  previewImage: {
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
-    marginTop: 8,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: Colors.error,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     alignItems: "center",
+    justifyContent: "center",
   },
-  searchButtonText: {
+  visibilityContainer: {
+    marginBottom: 8,
+  },
+  visibilityInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  visibilityButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  visibilityButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.neutral.lightGray,
+    flex: 1,
+    justifyContent: "center",
+  },
+  activeVisibilityButton: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  visibilityText: {
+    ...TextStyles.body,
+    color: Colors.primary,
+    fontWeight: "600",
+  },
+  activeVisibilityText: {
     color: Colors.text.white,
-    fontWeight: "bold",
-    fontSize: 16,
-    fontFamily: TextStyles.button.fontFamily,
   },
-  suggestionBox: {
-    backgroundColor: Colors.neutral.light,
+  searchInput: {
+    borderWidth: 1,
+    borderColor: Colors.neutral.lightGray,
     padding: 12,
     borderRadius: 8,
-    marginTop: 10,
-  },
-  suggestionText: {
-    paddingVertical: 6,
-    fontSize: 16,
-    color: Colors.text.primary,
+    backgroundColor: Colors.card,
+    fontSize: 14,
     fontFamily: TextStyles.body.fontFamily,
+    color: Colors.text.primary,
+    marginBottom: 12,
+  },
+  selectedUsersContainer: {
+    marginBottom: 16,
+  },
+  selectedUsersTitle: {
+    ...TextStyles.body,
+    fontWeight: "600",
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  selectedUsersList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  selectedUserTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  selectedUserText: {
+    ...TextStyles.body,
+    color: Colors.text.white,
+    fontSize: 12,
+  },
+  removeUserButton: {
+    backgroundColor: Colors.error,
+    borderRadius: 10,
+    width: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 20,
+    justifyContent: "center",
+  },
+  loadingText: {
+    ...TextStyles.body,
+    color: Colors.text.light,
+  },
+  usersListContainer: {
+    maxHeight: 200,
+  },
+  usersList: {
+    backgroundColor: Colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.neutral.lightGray,
+    maxHeight: 200,
+  },
+  userItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral.lightGray,
+  },
+  selectedUserItem: {
+    backgroundColor: Colors.primary + "20",
+  },
+  userInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userDisplayName: {
+    ...TextStyles.body,
+    fontWeight: "600",
+    color: Colors.text.primary,
+  },
+  userUsername: {
+    ...TextStyles.body,
+    color: Colors.text.light,
+    fontSize: 12,
+  },
+  emptyText: {
+    ...TextStyles.body,
+    color: Colors.text.light,
+    textAlign: "center",
+    padding: 20,
   },
   submitButton: {
-    backgroundColor: Colors.success,
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 30,
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    flexDirection: "row",
+    gap: 8,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   submitButtonText: {
-    color: Colors.text.white,
-    fontWeight: "bold",
+    ...TextStyles.button,
     fontSize: 16,
-    fontFamily: TextStyles.button.fontFamily,
+    fontWeight: "bold",
   },
-  publicInfo: {
-    marginTop: 20,
-    fontStyle: "italic",
-    color: Colors.text.secondary,
-    textAlign: "center",
-    fontFamily: TextStyles.body.fontFamily,
+  emptyContainer: {
+    alignItems: "center",
+    padding: 20,
+  },
+  testButton: {
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  testButtonText: {
+    ...TextStyles.body,
+    color: Colors.text.white,
+    fontSize: 14,
   },
 });

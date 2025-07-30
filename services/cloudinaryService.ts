@@ -106,8 +106,8 @@ export const testCloudinaryUpload = async (uri: string): Promise<string | null> 
       name: "test.jpg",
     } as any);
     
-    // Probar sin upload preset primero
-    // data.append("upload_preset", "bridgea-app");
+    // Agregar upload preset requerido
+    data.append("upload_preset", "bridgea-app");
 
     console.log("🚀 Enviando imagen de prueba a Cloudinary...");
 
@@ -137,10 +137,7 @@ export const testCloudinaryUpload = async (uri: string): Promise<string | null> 
     return result.secure_url || null;
   } catch (error) {
     console.error("❌ Error en prueba alternativa:", error);
-    console.error("❌ Detalles del error:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    // No mostrar detalles del error en pantalla, solo en consola
     return null;
   }
 };
@@ -200,10 +197,7 @@ export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string
     return result.secure_url || null;
   } catch (error) {
     console.error("❌ Error al subir imagen de bridge:", error);
-    console.error("❌ Detalles del error:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    // No mostrar detalles del error en pantalla, solo en consola
     return null;
   }
 };

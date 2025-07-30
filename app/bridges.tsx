@@ -1,4 +1,6 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { onAuthStateChanged } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,6 +14,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import defaultProfile from "../assets/default-profile.png";
 import BottomNav from "../components/BottomNav";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
@@ -19,19 +22,18 @@ import { auth, db } from "../firebase/config";
 
 interface Bridge {
   id: string;
-  senderId: string;
-  recipientId?: string;
   title: string;
   description: string;
   emotion: string;
   imageUrl?: string;
-  isPublic: boolean;
   createdAt: any;
+  senderId: string;
+  isPublic: boolean;
   type: "sent" | "received";
+  isDeleting?: boolean;
   senderName?: string;
   senderUsername?: string;
-  senderPhoto?: string | null;
-  isDeleting?: boolean;
+  senderPhotoURL?: string;
 }
 
 export default function BridgesScreen() {
@@ -39,119 +41,101 @@ export default function BridgesScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMyBridges = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const bridgesRef = collection(db, "bridges");
-
-        // Obtener todos los bridges del usuario (enviados y recibidos)
-        const sentQuery = query(bridgesRef, where("senderId", "==", user.uid));
-        const receivedQuery = query(bridgesRef, where("recipientId", "==", user.uid));
-
-        const [sentSnap, receivedSnap] = await Promise.all([
-          getDocs(sentQuery),
-          getDocs(receivedQuery),
-        ]);
-
-        const sentBridges: Bridge[] = sentSnap.docs.map((doc) => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          type: "sent"
-        } as Bridge));
-        
-        const receivedBridges: Bridge[] = receivedSnap.docs.map((doc) => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          type: "received"
-        } as Bridge));
-
-        // Obtener información del remitente para bridges recibidos
-        const bridgesWithSenderInfo = await Promise.all(
-          receivedBridges.map(async (bridge) => {
-            try {
-              const senderDoc = await getDoc(doc(db, "users", bridge.senderId));
-              const senderData = senderDoc.exists() ? senderDoc.data() : {};
-              return {
-                ...bridge,
-                senderName: senderData.name || "Usuario desconocido",
-                senderUsername: senderData.username || "desconocido",
-                senderPhoto: senderData.photoURL || null,
-              };
-            } catch (error) {
-              console.error("Error obteniendo información del remitente:", error);
-              return {
-                ...bridge,
-                senderName: "Usuario desconocido",
-                senderUsername: "desconocido",
-                senderPhoto: null,
-              };
-            }
-          })
-        );
-
-        // Combinar y ordenar por fecha
-        const allBridges = [...sentBridges, ...bridgesWithSenderInfo].sort((a, b) => {
-          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
-          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
-          return dateB.getTime() - dateA.getTime(); // Orden descendente
-        });
-
-        setMyBridges(allBridges);
-        console.log("Mis bridges cargados:", allBridges);
-      } catch (error) {
-        console.error("Error al cargar mis bridges:", error);
-      } finally {
-        setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.replace("/");
+      } else {
+        fetchMyBridges();
       }
-    };
+    });
 
-    fetchMyBridges();
+    return () => unsubscribe();
   }, []);
 
-  const handleSenderPress = (senderUsername: string) => {
-    if (senderUsername && senderUsername !== "desconocido") {
-      router.push(`/user/${senderUsername}`);
+  const fetchMyBridges = async () => {
+    try {
+      setLoading(true);
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+
+      // Obtener bridges enviados
+      const sentQuery = query(
+        collection(db, "bridges"),
+        where("senderId", "==", userId)
+      );
+      const sentSnapshot = await getDocs(sentQuery);
+      const sentBridges: Bridge[] = sentSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<Bridge, "id">),
+        type: "sent" as const,
+      }));
+
+      // Obtener bridges recibidos (buscar en el array recipientIds)
+      const receivedQuery = query(
+        collection(db, "bridges"),
+        where("recipientIds", "array-contains", userId)
+      );
+      const receivedSnapshot = await getDocs(receivedQuery);
+      const receivedBridges: Bridge[] = await Promise.all(
+        receivedSnapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          // Obtener información del remitente
+          const senderDoc = await getDoc(doc(db, "users", data.senderId));
+          const senderData = senderDoc.exists() ? senderDoc.data() : {};
+          
+          return {
+            id: docSnapshot.id,
+            ...(data as Omit<Bridge, "id">),
+            type: "received" as const,
+            senderName: (senderData as any).name || "Usuario desconocido",
+            senderUsername: (senderData as any).username || "desconocido",
+            senderPhotoURL: (senderData as any).photoURL || null,
+          };
+        })
+      );
+
+      // Combinar y ordenar por fecha
+      const allBridges = [...sentBridges, ...receivedBridges].sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setMyBridges(allBridges);
+    } catch (error) {
+      console.error("Error fetching bridges:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteBridge = async (bridgeId: string, bridgeTitle: string) => {
     Alert.alert(
-      "🗑️ Eliminar Bridge",
-      `¿Estás seguro de que quieres eliminar "${bridgeTitle}"?\n\nEsta acción no se puede deshacer y el bridge desaparecerá permanentemente.`,
+      "Eliminar Bridge",
+      `¿Estás seguro de que quieres eliminar "${bridgeTitle}"?\n\nEsta acción no se puede deshacer.`,
       [
+        { text: "Cancelar", style: "cancel" },
         {
-          text: "❌ Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "🗑️ Eliminar",
+          text: "Eliminar",
           style: "destructive",
           onPress: async () => {
             try {
-              // Mostrar indicador de carga solo para esta operación
-              const loadingBridges = myBridges.map(bridge => 
+              const loadingBridges = myBridges.map(bridge =>
                 bridge.id === bridgeId ? { ...bridge, isDeleting: true } : bridge
               );
               setMyBridges(loadingBridges);
-              
+
               await deleteDoc(doc(db, "bridges", bridgeId));
               console.log("Bridge eliminado exitosamente:", bridgeId);
-              
-              // Actualizar la lista local removiendo el bridge eliminado
-              setMyBridges(prevBridges => 
+              setMyBridges(prevBridges =>
                 prevBridges.filter(bridge => bridge.id !== bridgeId)
               );
-              
-              Alert.alert("✅ Éxito", "Bridge eliminado correctamente");
+              Alert.alert("Éxito", "Bridge eliminado correctamente");
             } catch (error) {
               console.error("Error al eliminar bridge:", error);
-              Alert.alert("❌ Error", "No se pudo eliminar el bridge. Inténtalo de nuevo.");
-              
-              // Restaurar el bridge en caso de error
-              setMyBridges(prevBridges => 
-                prevBridges.map(bridge => 
+              Alert.alert("Error", "No se pudo eliminar el bridge. Inténtalo de nuevo.");
+              setMyBridges(prevBridges =>
+                prevBridges.map(bridge =>
                   bridge.id === bridgeId ? { ...bridge, isDeleting: false } : bridge
                 )
               );
@@ -165,43 +149,69 @@ export default function BridgesScreen() {
   const renderBridge = (bridge: Bridge) => (
     <View key={bridge.id} style={[styles.bridgeCard, bridge.isDeleting && styles.deletingBridge]}>
       <View style={styles.bridgeHeader}>
-        <Text style={styles.bridgeType}>
-          {bridge.type === "sent" ? "📤 Enviado" : "📥 Recibido"}
-        </Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.bridgeVisibility}>
-            {bridge.isPublic ? "🌍 Público" : "🔒 Privado"}
+        <View style={styles.bridgeTypeContainer}>
+          <Feather 
+            name={bridge.type === "sent" ? "send" : "inbox"} 
+            size={16} 
+            color={bridge.type === "sent" ? Colors.primary : Colors.secondary} 
+          />
+          <Text style={styles.bridgeType}>
+            {bridge.type === "sent" ? "Enviado" : "Recibido"}
           </Text>
-          {/* Botón de eliminar solo para bridges enviados */}
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.visibilityContainer}>
+            <Feather 
+              name={bridge.isPublic ? "globe" : "lock"} 
+              size={14} 
+              color={Colors.text.secondary} 
+            />
+            <Text style={styles.bridgeVisibility}>
+              {bridge.isPublic ? "Público" : "Privado"}
+            </Text>
+          </View>
           {bridge.type === "sent" && !bridge.isDeleting && (
             <Pressable
               style={styles.deleteButton}
               onPress={() => handleDeleteBridge(bridge.id, bridge.title)}
             >
-              <Text style={styles.deleteButtonText}>🗑️</Text>
+              <Feather name="trash-2" size={16} color={Colors.error} />
             </Pressable>
           )}
-          {/* Indicador de eliminación */}
           {bridge.isDeleting && (
             <View style={styles.deletingIndicator}>
-              <ActivityIndicator size="small" color="#e74c3c" />
+              <ActivityIndicator size="small" color={Colors.error} />
               <Text style={styles.deletingText}>Eliminando...</Text>
             </View>
           )}
         </View>
       </View>
-      
-      {/* Mostrar información del remitente para bridges recibidos */}
-      {bridge.type === "received" && (
-        <Pressable 
+
+      <Text style={styles.bridgeTitle}>{bridge.title}</Text>
+      <Text style={styles.bridgeEmotion}>{bridge.emotion}</Text>
+      <Text style={styles.bridgeDescription}>{bridge.description}</Text>
+
+      {bridge.imageUrl && (
+        <Image 
+          source={{ uri: bridge.imageUrl }} 
+          style={styles.bridgeImage} 
+          resizeMode="cover"
+          onError={(error) => {
+            console.error("❌ Error cargando imagen:", error.nativeEvent.error);
+          }}
+        />
+      )}
+
+      {bridge.type === "received" && bridge.senderName && (
+        <Pressable
           style={styles.senderContainer}
-          onPress={() => handleSenderPress(bridge.senderUsername || "")}
+          onPress={() => router.push(`/user/${bridge.senderUsername}`)}
         >
           <Image
             source={
-              bridge.senderPhoto
-                ? { uri: bridge.senderPhoto }
-                : require("../assets/default-profile.png")
+              bridge.senderPhotoURL
+                ? { uri: bridge.senderPhotoURL }
+                : defaultProfile
             }
             style={styles.senderAvatar}
           />
@@ -209,18 +219,10 @@ export default function BridgesScreen() {
             <Text style={styles.senderName}>{bridge.senderName}</Text>
             <Text style={styles.senderUsername}>@{bridge.senderUsername}</Text>
           </View>
-          <Text style={styles.senderLabel}>te envió este bridge</Text>
+          <Feather name="chevron-right" size={16} color={Colors.text.light} />
         </Pressable>
       )}
-      
-      <Text style={styles.bridgeTitle}>{bridge.title}</Text>
-      <Text style={styles.bridgeEmotion}>{bridge.emotion}</Text>
-      <Text style={styles.bridgeDescription}>{bridge.description}</Text>
-      
-      {bridge.imageUrl ? (
-        <Image source={{ uri: bridge.imageUrl }} style={styles.image} />
-      ) : null}
-      
+
       <Text style={styles.bridgeDate}>
         {bridge.createdAt?.toDate?.().toLocaleString() || "Fecha no disponible"}
       </Text>
@@ -241,15 +243,21 @@ export default function BridgesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.pageTitle}>Mis Bridges</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.pageTitle}>Mis Bridges 🌉</Text>
-        
         {myBridges.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>Aún no tienes bridges</Text>
+            <Feather name="inbox" size={64} color={Colors.text.light} />
+            <Text style={styles.emptyTitle}>No tienes bridges aún</Text>
             <Text style={styles.emptyText}>
-              Crea tu primer bridge para empezar a conectar con otros usuarios
+              Crea tu primer bridge para conectar con otros usuarios
             </Text>
+            <Pressable style={styles.createButton} onPress={() => router.push("/create-bridge")}>
+              <Text style={styles.createButtonText}>Crear mi primer bridge</Text>
+            </Pressable>
           </View>
         ) : (
           myBridges.map(renderBridge)
@@ -264,6 +272,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  header: {
+    padding: 20,
+    paddingBottom: 10,
+  },
+  pageTitle: {
+    ...TextStyles.largeTitle,
+    color: Colors.text.primary,
   },
   scrollContent: {
     padding: 20,
@@ -280,23 +296,38 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontFamily: TextStyles.body.fontFamily,
   },
-  pageTitle: {
-    ...TextStyles.largeTitle,
-    marginBottom: 20,
-    textAlign: "center",
-  },
   emptyContainer: {
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 60,
   },
   emptyTitle: {
-    ...TextStyles.cardTitle,
-    marginBottom: 10,
+    ...TextStyles.largeTitle,
+    textAlign: "center",
+    marginTop: 16,
+    marginBottom: 8,
+    color: Colors.text.primary,
   },
   emptyText: {
     ...TextStyles.body,
     textAlign: "center",
+    marginBottom: 24,
     color: Colors.text.secondary,
+  },
+  createButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  createButtonText: {
+    ...TextStyles.button,
+    fontSize: 16,
+    fontWeight: "bold",
   },
   bridgeCard: {
     backgroundColor: Colors.card,
@@ -309,94 +340,57 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  deletingBridge: {
+    opacity: 0.6,
+  },
   bridgeHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  bridgeTypeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   bridgeType: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: "600",
-    fontFamily: TextStyles.secondary.fontFamily,
-  },
-  bridgeVisibility: {
-    fontSize: 12,
+    ...TextStyles.secondary,
     color: Colors.text.secondary,
-    fontWeight: "500",
-    fontFamily: TextStyles.secondary.fontFamily,
+    fontWeight: "600",
   },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+  },
+  visibilityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  bridgeVisibility: {
+    ...TextStyles.secondary,
+    color: Colors.text.secondary,
   },
   deleteButton: {
-    marginLeft: 10,
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: Colors.error,
-  },
-  deleteButtonText: {
-    color: Colors.text.white,
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: TextStyles.button.fontFamily,
-  },
-  deletingBridge: {
-    opacity: 0.6,
+    padding: 4,
   },
   deletingIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 10,
+    gap: 6,
   },
   deletingText: {
-    fontSize: 12,
+    ...TextStyles.secondary,
     color: Colors.error,
-    marginLeft: 4,
-    fontWeight: "500",
-    fontFamily: TextStyles.secondary.fontFamily,
-  },
-  senderContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.neutral.light,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  senderAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  senderInfo: {
-    flex: 1,
-  },
-  senderName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text.primary,
-    fontFamily: TextStyles.body.fontFamily,
-  },
-  senderUsername: {
-    fontSize: 12,
-    color: Colors.text.secondary,
-    fontFamily: TextStyles.secondary.fontFamily,
-  },
-  senderLabel: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontStyle: "italic",
-    fontFamily: TextStyles.secondary.fontFamily,
   },
   bridgeTitle: {
     ...TextStyles.cardTitle,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   bridgeEmotion: {
-    fontSize: 16,
+    fontSize: 18,
     color: Colors.primary,
     marginBottom: 8,
     fontFamily: TextStyles.body.fontFamily,
@@ -405,17 +399,42 @@ const styles = StyleSheet.create({
     ...TextStyles.body,
     marginBottom: 12,
   },
-  bridgeDate: {
-    fontSize: 12,
-    color: Colors.text.light,
-    marginTop: 8,
-    fontFamily: TextStyles.secondary.fontFamily,
-  },
-  image: {
+  bridgeImage: {
     width: "100%",
     height: 200,
     borderRadius: 8,
-    marginTop: 8,
+    marginBottom: 12,
+  },
+  senderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  senderAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 12,
+  },
+  senderInfo: {
+    flex: 1,
+  },
+  senderName: {
+    ...TextStyles.body,
+    fontWeight: "600",
+    color: Colors.text.primary,
+  },
+  senderUsername: {
+    ...TextStyles.secondary,
+    color: Colors.text.secondary,
+  },
+  bridgeDate: {
+    fontSize: 12,
+    color: Colors.text.light,
+    fontFamily: TextStyles.secondary.fontFamily,
   },
 });
 

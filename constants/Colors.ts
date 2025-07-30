@@ -6,23 +6,6 @@
 const tintColorLight = '#FF7F00';
 const tintColorDark = '#FF7F00';
 
-export default {
-  light: {
-    text: '#333333',
-    background: '#F5F5F5',
-    tint: tintColorLight,
-    tabIconDefault: '#666666',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#FFFFFF',
-    background: '#1A1A1A',
-    tint: tintColorDark,
-    tabIconDefault: '#999999',
-    tabIconSelected: tintColorDark,
-  },
-};
-
 // Paleta de colores del diseño
 export const Colors = {
   // Color Primario
@@ -71,4 +54,24 @@ export const Colors = {
     offline: '#E74C3C',
     pending: '#FFD700',
   },
+
+  // Estructura para temas light/dark (requerida por algunos componentes)
+  light: {
+    text: '#333333',
+    background: '#F5F5F5',
+    tint: tintColorLight,
+    tabIconDefault: '#666666',
+    tabIconSelected: tintColorLight,
+    icon: '#666666',
+  },
+  dark: {
+    text: '#FFFFFF',
+    background: '#1A1A1A',
+    tint: tintColorDark,
+    tabIconDefault: '#999999',
+    tabIconSelected: tintColorDark,
+    icon: '#999999',
+  },
 };
+
+export default Colors;
