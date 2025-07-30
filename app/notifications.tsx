@@ -65,6 +65,10 @@ export default function NotificationsScreen() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<Message | null>(null);
+  const [showConversation, setShowConversation] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [conversationMessages, setConversationMessages] = useState<Message[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -90,23 +94,39 @@ export default function NotificationsScreen() {
           }) as Notification[];
         setNotifications(notifications);
 
-        // Fetch messages
-        const messagesQuery = query(
+        // Fetch messages (recibidos y enviados)
+        const receivedMessagesQuery = query(
           collection(db, 'messages'),
           where('recipientId', '==', user.uid)
         );
-        const messagesSnapshot = await getDocs(messagesQuery);
-        const messages = messagesSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .sort((a: any, b: any) => {
-            const aTime = a.createdAt?.toDate?.() || new Date(0);
-            const bTime = b.createdAt?.toDate?.() || new Date(0);
-            return bTime.getTime() - aTime.getTime();
-          }) as Message[];
-        setMessages(messages);
+        const sentMessagesQuery = query(
+          collection(db, 'messages'),
+          where('senderId', '==', user.uid)
+        );
+        
+        const [receivedSnapshot, sentSnapshot] = await Promise.all([
+          getDocs(receivedMessagesQuery),
+          getDocs(sentMessagesQuery)
+        ]);
+
+        const receivedMessages = receivedSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Message[];
+
+        const sentMessages = sentSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Message[];
+
+        // Combinar y ordenar todos los mensajes
+        const allMessages = [...receivedMessages, ...sentMessages].sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime.getTime() - aTime.getTime();
+        });
+
+        setMessages(allMessages);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -147,7 +167,7 @@ export default function NotificationsScreen() {
 
     setIsSearching(true);
     try {
-      // Buscar usuarios por username o nombre
+      // Buscar usuarios por username (más preciso)
       const usersQuery = query(
         collection(db, 'users'),
         where('username', '>=', searchTerm.toLowerCase()),
@@ -160,9 +180,10 @@ export default function NotificationsScreen() {
           id: doc.id,
           ...doc.data()
         }))
-        .filter((user: any) => user.id !== user?.uid) // Excluir al usuario actual
+        .filter((userData: any) => userData.id !== user?.uid) // Excluir al usuario actual
         .slice(0, 10); // Limitar a 10 resultados
 
+      console.log('🔍 Resultados de búsqueda:', results.length);
       setSearchResults(results);
       setShowSearchResults(true);
     } catch (error) {
@@ -177,6 +198,85 @@ export default function NotificationsScreen() {
     setNewMessageRecipient(selectedUser.username);
     setShowSearchResults(false);
     setSearchResults([]);
+  };
+
+  const openConversation = async (message: Message) => {
+    if (!user) return;
+    
+    setSelectedConversation(message);
+    setShowConversation(true);
+    setReplyContent('');
+
+    try {
+      // Obtener todos los mensajes de la conversación
+      const otherUserId = message.senderId === user.uid ? message.recipientId : message.senderId;
+      
+      const conversationQuery1 = query(
+        collection(db, 'messages'),
+        where('senderId', '==', user.uid),
+        where('recipientId', '==', otherUserId)
+      );
+      
+      const conversationQuery2 = query(
+        collection(db, 'messages'),
+        where('senderId', '==', otherUserId),
+        where('recipientId', '==', user.uid)
+      );
+
+      const [snapshot1, snapshot2] = await Promise.all([
+        getDocs(conversationQuery1),
+        getDocs(conversationQuery2)
+      ]);
+
+      const conversationMessages = [
+        ...snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+        ...snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      ].sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(0);
+        return aTime.getTime() - bTime.getTime();
+      }) as Message[];
+
+      setConversationMessages(conversationMessages);
+    } catch (error) {
+      console.error('Error cargando conversación:', error);
+    }
+  };
+
+  const sendReply = async () => {
+    if (!user || !selectedConversation || !replyContent.trim()) {
+      Alert.alert('Error', 'Por favor escribe un mensaje');
+      return;
+    }
+
+    try {
+      const otherUserId = selectedConversation.senderId === user.uid 
+        ? selectedConversation.recipientId 
+        : selectedConversation.senderId;
+      
+      const otherUserName = selectedConversation.senderId === user.uid 
+        ? selectedConversation.recipientName 
+        : selectedConversation.senderName;
+
+      await addDoc(collection(db, 'messages'), {
+        senderId: user.uid,
+        senderName: user.displayName || 'Usuario',
+        recipientId: otherUserId,
+        recipientName: otherUserName,
+        content: replyContent.trim(),
+        createdAt: serverTimestamp(),
+        read: false,
+      });
+
+      setReplyContent('');
+      // Recargar la conversación
+      if (selectedConversation) {
+        openConversation(selectedConversation);
+      }
+    } catch (error) {
+      console.error('Error enviando respuesta:', error);
+      Alert.alert('Error', 'No se pudo enviar la respuesta');
+    }
   };
 
   const sendMessage = async () => {
@@ -245,15 +345,25 @@ export default function NotificationsScreen() {
   );
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <Pressable style={[styles.messageItem, !item.read && styles.unreadItem]}>
+    <Pressable 
+      style={[styles.messageItem, !item.read && styles.unreadItem]}
+      onPress={() => openConversation(item)}
+    >
       <View style={styles.messageHeader}>
-        <Text style={styles.messageSender}>{item.senderName}</Text>
+        <Text style={styles.messageSender}>
+          {item.senderId === user?.uid ? 'Tú' : item.senderName}
+        </Text>
         <Text style={styles.messageTime}>
           {item.createdAt?.toDate?.().toLocaleDateString() || 'Ahora'}
         </Text>
       </View>
       <Text style={styles.messageContent}>{item.content}</Text>
-      {!item.read && <View style={styles.unreadDot} />}
+      <View style={styles.messageDirection}>
+        <Text style={styles.messageDirectionText}>
+          {item.senderId === user?.uid ? 'Enviado' : 'Recibido'}
+        </Text>
+      </View>
+      {!item.read && item.senderId !== user?.uid && <View style={styles.unreadDot} />}
     </Pressable>
   );
 
@@ -406,6 +516,74 @@ export default function NotificationsScreen() {
                 </View>
               </View>
             </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      )}
+
+      {showConversation && selectedConversation && (
+        <View style={styles.conversationModal}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoidingView}
+          >
+            <View style={styles.conversationContent}>
+              <View style={styles.conversationHeader}>
+                <Text style={styles.conversationTitle}>
+                  Conversación con {selectedConversation.senderId === user?.uid 
+                    ? selectedConversation.recipientName 
+                    : selectedConversation.senderName}
+                </Text>
+                <Pressable 
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setShowConversation(false);
+                    setSelectedConversation(null);
+                    setConversationMessages([]);
+                  }}
+                >
+                  <Feather name="x" size={24} color={Colors.text.primary} />
+                </Pressable>
+              </View>
+
+              <ScrollView 
+                style={styles.conversationMessages}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {conversationMessages.map((msg) => (
+                  <View 
+                    key={msg.id} 
+                    style={[
+                      styles.conversationMessage,
+                      msg.senderId === user?.uid ? styles.sentMessage : styles.receivedMessage
+                    ]}
+                  >
+                    <Text style={styles.conversationMessageText}>{msg.content}</Text>
+                    <Text style={styles.conversationMessageTime}>
+                      {msg.createdAt?.toDate?.().toLocaleTimeString() || 'Ahora'}
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+
+              <View style={styles.replyContainer}>
+                <TextInput
+                  style={styles.replyInput}
+                  placeholder="Escribe tu respuesta..."
+                  value={replyContent}
+                  onChangeText={setReplyContent}
+                  multiline
+                  placeholderTextColor={Colors.text.light}
+                />
+                <Pressable 
+                  style={[styles.replyButton, !replyContent.trim() && styles.replyButtonDisabled]}
+                  onPress={sendReply}
+                  disabled={!replyContent.trim()}
+                >
+                  <Feather name="send" size={20} color={Colors.text.white} />
+                </Pressable>
+              </View>
+            </View>
           </KeyboardAvoidingView>
         </View>
       )}
@@ -673,5 +851,106 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 20,
+  },
+  messageDirection: {
+    marginTop: 4,
+  },
+  messageDirectionText: {
+    ...TextStyles.caption,
+    color: Colors.text.light,
+    fontSize: 10,
+  },
+  conversationModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 1000,
+  },
+  conversationContent: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    margin: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  conversationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  conversationTitle: {
+    ...TextStyles.cardTitle,
+    flex: 1,
+    marginRight: 16,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  conversationMessages: {
+    flex: 1,
+    padding: 16,
+  },
+  conversationMessage: {
+    marginBottom: 12,
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 12,
+  },
+  sentMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: Colors.primary,
+  },
+  receivedMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  conversationMessageText: {
+    ...TextStyles.body,
+    color: Colors.text.primary,
+  },
+  conversationMessageTime: {
+    ...TextStyles.caption,
+    color: Colors.text.light,
+    fontSize: 10,
+    marginTop: 4,
+  },
+  replyContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  replyInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    maxHeight: 100,
+    ...TextStyles.body,
+  },
+  replyButton: {
+    backgroundColor: Colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  replyButtonDisabled: {
+    backgroundColor: Colors.border,
   },
 }); 
