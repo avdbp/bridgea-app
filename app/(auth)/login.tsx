@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { TextStyles } from "../../constants/Typography";
 import { auth } from "../../firebase/config";
+import notificationService from "../../services/notificationService";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -39,7 +40,21 @@ export default function LoginScreen() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Configurar notificaciones para el usuario que inicia sesión
+      try {
+        console.log("🔔 Configurando notificaciones para usuario existente...");
+        const hasPermission = await notificationService.requestPermissions();
+        if (hasPermission) {
+          await notificationService.saveTokenToFirestore(user.uid);
+          console.log("✅ Notificaciones configuradas para:", user.uid);
+        }
+      } catch (error) {
+        console.error("❌ Error configurando notificaciones:", error);
+      }
+      
       router.replace("/home");
     } catch (error: unknown) {
       if (error instanceof Error) {

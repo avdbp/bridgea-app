@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { TextStyles } from "../../constants/Typography";
 import { auth, db } from "../../firebase/config";
+import notificationService from "../../services/notificationService";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
@@ -64,6 +65,18 @@ export default function RegisterScreen() {
         showCurrentLocation: false,
         currentLocation: null,
       });
+
+      // Configurar notificaciones para el nuevo usuario
+      try {
+        console.log("🔔 Configurando notificaciones para nuevo usuario...");
+        const hasPermission = await notificationService.requestPermissions();
+        if (hasPermission) {
+          await notificationService.saveTokenToFirestore(user.uid);
+          console.log("✅ Notificaciones configuradas para:", user.uid);
+        }
+      } catch (error) {
+        console.error("❌ Error configurando notificaciones:", error);
+      }
 
       router.replace("/home");
     } catch (error: unknown) {

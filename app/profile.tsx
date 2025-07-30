@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
 import BottomNav from "../components/BottomNav";
+import NotificationStatus from "../components/NotificationStatus";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
@@ -282,6 +283,12 @@ export default function ProfileScreen() {
             <Text style={styles.value}>
               {userData?.createdAt?.toDate?.().toLocaleDateString() || "Fecha no disponible"}
             </Text>
+          </View>
+
+          {/* Componente de estado de notificaciones */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Notificaciones:</Text>
+            <NotificationStatus userId={auth.currentUser?.uid} />
           </View>
 
           <Pressable style={styles.logoutButton} onPress={handleLogout}>

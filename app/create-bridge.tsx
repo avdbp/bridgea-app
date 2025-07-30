@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, doc, getDocs, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -23,6 +23,7 @@ import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
 import { testCloudinaryUpload, uploadBridgeImageToCloudinary } from "../services/cloudinaryService";
+import notificationService from "../services/notificationService";
 
 const EMOTIONS = [
   { name: "Amor", icon: "heart" },
@@ -245,6 +246,34 @@ export default function CreateBridgeScreen() {
       await setDoc(bridgeRef, bridgeData);
 
       console.log("✅ Bridge creado exitosamente!");
+
+      // Enviar notificaciones a los destinatarios
+      if (!isPublic && selectedUsers.length > 0) {
+        console.log("🔔 Enviando notificaciones a destinatarios...");
+        
+        // Obtener información del remitente
+        const senderDoc = await getDoc(doc(db, "users", senderId));
+        const senderData = senderDoc.exists() ? senderDoc.data() : {};
+        const senderName = senderData.name || "Usuario";
+        
+        // Enviar notificación a cada destinatario
+        const notificationPromises = selectedUsers.map(user =>
+          notificationService.sendBridgeReceivedNotification(
+            user.id,
+            senderName,
+            title.trim(),
+            true // Es privado
+          )
+        );
+        
+        try {
+          await Promise.all(notificationPromises);
+          console.log("✅ Notificaciones enviadas a todos los destinatarios");
+        } catch (error) {
+          console.error("❌ Error enviando notificaciones:", error);
+        }
+      }
+
       Alert.alert("¡Éxito!", "Tu bridge ha sido creado correctamente.", [
         {
           text: "Ver mis bridges",
