@@ -44,6 +44,7 @@ interface Message {
   content: string;
   createdAt: any;
   read: boolean;
+  uniqueKey?: string; // Key única para evitar duplicados
 }
 
 export default function NotificationsScreen() {
@@ -119,12 +120,17 @@ export default function NotificationsScreen() {
           ...doc.data()
         })) as Message[];
 
-        // Combinar y ordenar todos los mensajes
-        const allMessages = [...receivedMessages, ...sentMessages].sort((a, b) => {
-          const aTime = a.createdAt?.toDate?.() || new Date(0);
-          const bTime = b.createdAt?.toDate?.() || new Date(0);
-          return bTime.getTime() - aTime.getTime();
-        });
+        // Combinar y ordenar todos los mensajes con keys únicas
+        const allMessages = [...receivedMessages, ...sentMessages]
+          .map((msg, index) => ({
+            ...msg,
+            uniqueKey: `${msg.id}_${msg.senderId}_${index}` // Crear key única
+          }))
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toDate?.() || new Date(0);
+            const bTime = b.createdAt?.toDate?.() || new Date(0);
+            return bTime.getTime() - aTime.getTime();
+          });
 
         setMessages(allMessages);
       } catch (error) {
@@ -231,11 +237,16 @@ export default function NotificationsScreen() {
       const conversationMessages = [
         ...snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data() })),
         ...snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      ].sort((a: any, b: any) => {
-        const aTime = a.createdAt?.toDate?.() || new Date(0);
-        const bTime = b.createdAt?.toDate?.() || new Date(0);
-        return aTime.getTime() - bTime.getTime();
-      }) as Message[];
+      ]
+        .map((msg: any, index) => ({
+          ...msg,
+          uniqueKey: `${msg.id}_${msg.senderId}_${index}` // Crear key única
+        }))
+        .sort((a: any, b: any) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return aTime.getTime() - bTime.getTime();
+        }) as Message[];
 
       setConversationMessages(conversationMessages);
     } catch (error) {
@@ -346,6 +357,7 @@ export default function NotificationsScreen() {
 
   const renderMessage = ({ item }: { item: Message }) => (
     <Pressable 
+      key={item.uniqueKey || item.id}
       style={[styles.messageItem, !item.read && styles.unreadItem]}
       onPress={() => openConversation(item)}
     >
@@ -552,7 +564,7 @@ export default function NotificationsScreen() {
               >
                 {conversationMessages.map((msg) => (
                   <View 
-                    key={msg.id} 
+                    key={msg.uniqueKey || msg.id} 
                     style={[
                       styles.conversationMessage,
                       msg.senderId === user?.uid ? styles.sentMessage : styles.receivedMessage
