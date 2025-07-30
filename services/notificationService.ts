@@ -29,7 +29,7 @@ export interface NotificationData {
   body: string;
   data?: any;
   sound?: boolean;
-  badge?: number;
+  badge?: number | undefined;
 }
 
 class NotificationService {
@@ -161,7 +161,7 @@ class NotificationService {
           body: notification.body,
           data: notification.data || {},
           sound: notification.sound !== false,
-          badge: notification.badge,
+          badge: notification.badge || undefined, // Solo incluir si tiene valor
         },
         trigger: null, // Enviar inmediatamente
       });
@@ -190,7 +190,7 @@ class NotificationService {
         title: notification.title,
         body: notification.body,
         data: notification.data || {},
-        badge: notification.badge,
+        badge: notification.badge || undefined, // Solo incluir si tiene valor
       };
 
       const response = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -244,7 +244,7 @@ class NotificationService {
         isPrivate,
       },
       sound: true,
-      badge: 1,
+      // No incluir badge para evitar problemas con valores nil
     };
 
     return await this.sendPushNotification(recipientId, notification);

@@ -54,6 +54,7 @@ export default function NotificationStatus({ userId }: NotificationStatusProps) 
         title: '🔔 Notificación de prueba',
         body: '¡Las notificaciones están funcionando correctamente!',
         sound: true,
+        // No incluir badge para evitar problemas
       });
     } catch (error) {
       console.error('❌ Error enviando notificación de prueba:', error);
