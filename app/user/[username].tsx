@@ -172,19 +172,20 @@ export default function UserProfileScreen() {
               <Text style={styles.actionButtonText}>Enviar Bridge</Text>
             </Pressable>
             
-            <Pressable 
-              style={styles.actionButton}
-              onPress={() => router.push({
-                pathname: '/notifications',
-                params: { 
-                  openMessages: 'true',
-                  recipientUsername: userData.username 
-                }
-              })}
-            >
-              <Feather name="message-circle" size={20} color={Colors.text.white} />
-              <Text style={styles.actionButtonText}>Mensaje Privado</Text>
-            </Pressable>
+                            <Pressable
+                  style={styles.actionButton}
+                  onPress={() => router.push({
+                    pathname: '/conversation',
+                    params: {
+                      otherUserId: userData.id,
+                      otherUserName: userData.name,
+                      otherUserUsername: userData.username
+                    }
+                  })}
+                >
+                  <Feather name="message-circle" size={20} color={Colors.text.white} />
+                  <Text style={styles.actionButtonText}>Mensaje Privado</Text>
+                </Pressable>
           </View>
         </View>
 
