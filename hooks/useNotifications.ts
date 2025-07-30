@@ -4,8 +4,8 @@ import { router } from 'expo-router';
 import notificationService from '../services/notificationService';
 
 export const useNotifications = () => {
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
     // Configurar listeners de notificación

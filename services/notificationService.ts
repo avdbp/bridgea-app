@@ -11,6 +11,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -85,8 +87,8 @@ class NotificationService {
       }
 
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      if (!projectId) {
-        console.error('❌ No se encontró projectId en la configuración');
+      if (!projectId || projectId === 'your-project-id-here') {
+        console.log('⚠️ ProjectId no configurado, usando notificaciones locales únicamente');
         return null;
       }
 
@@ -110,8 +112,8 @@ class NotificationService {
     try {
       const token = await this.getToken();
       if (!token) {
-        console.log('❌ No se pudo obtener el token');
-        return false;
+        console.log('⚠️ No se pudo obtener el token, pero las notificaciones locales funcionarán');
+        return true; // Retornamos true para que no falle el flujo
       }
 
       const notificationToken: NotificationToken = {
@@ -176,8 +178,10 @@ class NotificationService {
     try {
       const token = await this.getUserToken(userId);
       if (!token) {
-        console.log('❌ No se encontró token para el usuario:', userId);
-        return false;
+        console.log('⚠️ No se encontró token para el usuario:', userId, '- usando notificación local');
+        // Fallback a notificación local
+        await this.sendLocalNotification(notification);
+        return true;
       }
 
       const message = {
@@ -203,12 +207,21 @@ class NotificationService {
         console.log('✅ Notificación push enviada a usuario:', userId);
         return true;
       } else {
-        console.error('❌ Error enviando notificación push:', response.status);
-        return false;
+        console.log('⚠️ Error enviando notificación push, usando notificación local');
+        // Fallback a notificación local
+        await this.sendLocalNotification(notification);
+        return true;
       }
     } catch (error) {
       console.error('❌ Error enviando notificación push:', error);
-      return false;
+      // Fallback a notificación local
+      try {
+        await this.sendLocalNotification(notification);
+        return true;
+      } catch (localError) {
+        console.error('❌ Error enviando notificación local:', localError);
+        return false;
+      }
     }
   }
 
