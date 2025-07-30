@@ -29,7 +29,7 @@ export interface NotificationData {
   body: string;
   data?: any;
   sound?: boolean;
-  badge?: number | undefined;
+  badge?: number; // Solo números positivos o undefined
 }
 
 class NotificationService {
@@ -155,14 +155,21 @@ class NotificationService {
    */
   async sendLocalNotification(notification: NotificationData): Promise<void> {
     try {
+      // Construir el contenido de la notificación dinámicamente
+      const content: any = {
+        title: notification.title,
+        body: notification.body,
+        data: notification.data || {},
+        sound: notification.sound !== false,
+      };
+
+      // Solo agregar badge si tiene un valor numérico válido
+      if (typeof notification.badge === 'number' && notification.badge >= 0) {
+        content.badge = notification.badge;
+      }
+
       await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notification.title,
-          body: notification.body,
-          data: notification.data || {},
-          sound: notification.sound !== false,
-          badge: notification.badge || undefined, // Solo incluir si tiene valor
-        },
+        content,
         trigger: null, // Enviar inmediatamente
       });
       console.log('✅ Notificación local enviada');
@@ -184,14 +191,19 @@ class NotificationService {
         return true;
       }
 
-      const message = {
+      // Construir el mensaje dinámicamente
+      const message: any = {
         to: token,
         sound: notification.sound !== false ? 'default' : undefined,
         title: notification.title,
         body: notification.body,
         data: notification.data || {},
-        badge: notification.badge || undefined, // Solo incluir si tiene valor
       };
+
+      // Solo agregar badge si tiene un valor numérico válido
+      if (typeof notification.badge === 'number' && notification.badge >= 0) {
+        message.badge = notification.badge;
+      }
 
       const response = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
