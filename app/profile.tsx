@@ -1,300 +1,414 @@
 import * as ImagePicker from "expo-image-picker";
-import * as Location from "expo-location";
 import { router } from "expo-router";
-import { signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
+import BottomNav from "../components/BottomNav";
+import { Colors } from "../constants/Colors";
+import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
-import { uploadImageToCloudinary } from "../services/cloudinaryService";
+import { uploadProfileImageToCloudinary } from "../services/cloudinaryService";
 
 export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [residenceCity, setResidenceCity] = useState("");
   const [bio, setBio] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [editingResidenceCity, setEditingResidenceCity] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
-  const [currentCity, setCurrentCity] = useState<string | null>(null);
-  const [showLocation, setShowLocation] = useState(false);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!auth.currentUser) return;
-
-      const docRef = doc(db, "users", auth.currentUser.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setUserData(data);
-        setBio(data.bio || "");
-        setShowLocation(data.showCurrentLocation || false);
-        setCurrentCity(data.currentLocation || null);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.replace("/");
+      } else {
+        fetchUserData(user.uid);
       }
-    };
+    });
 
-    fetchUserData();
+    return () => unsubscribe();
   }, []);
 
-  const calculateAge = (birthDateStr: string) => {
-    const birthDate = new Date(birthDateStr);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  const fetchUserData = async (uid: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUserData(data);
+        setName(data.name || "");
+        setResidenceCity(data.residenceCity || "");
+        setBio(data.bio || "");
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setLoading(false);
     }
-    return age;
   };
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert("Permiso denegado", "Se necesita permiso para acceder a tus fotos.");
+      Alert.alert("Permiso denegado", "Se necesita acceso a tus fotos.");
       return;
     }
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [1, 1],
-      base64: true,
     });
 
     if (!pickerResult.canceled && pickerResult.assets.length > 0) {
       const uri = pickerResult.assets[0].uri;
       try {
-        const imageUrl = await uploadImageToCloudinary(uri);
+        const imageUrl = await uploadProfileImageToCloudinary(uri);
 
         if (!imageUrl) {
-          Alert.alert("Error", "No se pudo subir la imagen a Cloudinary.");
+          Alert.alert("Error", "No se pudo subir la imagen.");
           return;
         }
 
-        const userRef = doc(db, "users", auth.currentUser!.uid);
-        await updateDoc(userRef, { photoURL: imageUrl });
+        // Actualizar en Firebase Auth
+        await updateProfile(auth.currentUser!, {
+          photoURL: imageUrl,
+        });
 
-        setUserData((prev: any) => ({ ...prev, photoURL: imageUrl }));
-        Alert.alert("Éxito", "Foto de perfil actualizada");
+        // Actualizar en Firestore
+        await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+          photoURL: imageUrl,
+        });
+
+        // Actualizar estado local
+        setUserData({ ...userData, photoURL: imageUrl });
+        Alert.alert("Éxito", "Foto de perfil actualizada.");
       } catch (error) {
-        console.log("Error al subir la imagen:", error);
-        Alert.alert("Error", "Hubo un problema al subir la imagen.");
+        console.error("Error updating profile image:", error);
+        Alert.alert("Error", "No se pudo actualizar la foto de perfil.");
       }
+    }
+  };
+
+  const handleSaveName = async () => {
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+        name: name,
+      });
+      setUserData({ ...userData, name: name });
+      setEditingName(false);
+      Alert.alert("Éxito", "Nombre actualizado.");
+    } catch (error) {
+      console.error("Error updating name:", error);
+      Alert.alert("Error", "No se pudo actualizar el nombre.");
+    }
+  };
+
+  const handleSaveResidenceCity = async () => {
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+        residenceCity: residenceCity,
+      });
+      setUserData({ ...userData, residenceCity: residenceCity });
+      setEditingResidenceCity(false);
+      Alert.alert("Éxito", "Ciudad de residencia actualizada.");
+    } catch (error) {
+      console.error("Error updating residence city:", error);
+      Alert.alert("Error", "No se pudo actualizar la ciudad de residencia.");
     }
   };
 
   const handleSaveBio = async () => {
     try {
-      const userRef = doc(db, "users", auth.currentUser!.uid);
-      await updateDoc(userRef, { bio });
-      setEditingBio(false);
-      Alert.alert("Guardado", "Tu biografía ha sido actualizada.");
-    } catch (error) {
-      Alert.alert("Error", "No se pudo guardar la bio.");
-    }
-  };
-
-  const fetchCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permiso denegado", "No se pudo acceder a la ubicación.");
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      const [place] = await Location.reverseGeocodeAsync(location.coords);
-
-      const fullLocation = `${place.city || place.subregion || "Ubicación desconocida"}, ${place.region || ""}, ${place.country || ""}`;
-      setCurrentCity(fullLocation);
-
-      const userRef = doc(db, "users", auth.currentUser!.uid);
-      await updateDoc(userRef, {
-        currentLocation: fullLocation,
-        showCurrentLocation: true,
+      await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+        bio: bio,
       });
+      setUserData({ ...userData, bio: bio });
+      setEditingBio(false);
+      Alert.alert("Éxito", "Biografía actualizada.");
     } catch (error) {
-      console.log("Error obteniendo ubicación:", error);
-      Alert.alert("Error", "No se pudo obtener la ubicación.");
-    }
-  };
-
-  const disableCurrentLocation = async () => {
-    setCurrentCity(null);
-    const userRef = doc(db, "users", auth.currentUser!.uid);
-    await updateDoc(userRef, {
-      showCurrentLocation: false,
-    });
-  };
-
-  const handleToggleLocation = async (value: boolean) => {
-    setShowLocation(value);
-    if (value) {
-      await fetchCurrentLocation();
-    } else {
-      await disableCurrentLocation();
+      console.error("Error updating bio:", error);
+      Alert.alert("Error", "No se pudo actualizar la biografía.");
     }
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
-    router.replace("/login");
+    try {
+      await signOut(auth);
+      router.replace("/");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
   };
 
-  if (!userData) return <Text style={styles.loading}>Cargando perfil...</Text>;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <Text style={styles.loadingText}>Cargando perfil...</Text>
+        </View>
+        <BottomNav />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Image
-          source={userData.photoURL ? { uri: userData.photoURL } : defaultProfile}
-          style={styles.profileImage}
-        />
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.pageTitle}>Mi Perfil 👤</Text>
 
-        <Pressable style={styles.uploadButton} onPress={handlePickImage}>
-          <Text style={styles.uploadButtonText}>Cambiar foto</Text>
-        </Pressable>
-
-        <Text style={styles.label}>Nombre:</Text>
-        <Text style={styles.value}>{userData.name}</Text>
-
-        <Text style={styles.label}>Username:</Text>
-        <Text style={styles.value}>{userData.username}</Text>
-
-        <Text style={styles.label}>Correo:</Text>
-        <Text style={styles.value}>{userData.email}</Text>
-
-        <Text style={styles.label}>Edad:</Text>
-        <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
-
-        <Text style={styles.label}>Ciudad de residencia:</Text>
-        <Text style={styles.value}>{userData.residenceCity || "No especificada"}</Text>
-
-        <Text style={styles.label}>Ubicación actual:</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-          <Switch value={showLocation} onValueChange={handleToggleLocation} />
-          <Text style={{ marginLeft: 10 }}>
-            {showLocation && currentCity ? currentCity : "No disponible actualmente"}
-          </Text>
-        </View>
-
-        <Text style={styles.label}>Fecha de registro:</Text>
-        <Text style={styles.value}>
-          {userData.createdAt?.toDate
-            ? userData.createdAt.toDate().toLocaleDateString()
-            : "No disponible"}
-        </Text>
-
-        <Text style={styles.label}>Bio:</Text>
-        {editingBio ? (
-          <>
-            <TextInput
-              style={styles.bioInput}
-              multiline
-              numberOfLines={3}
-              value={bio}
-              onChangeText={setBio}
+          <View style={styles.profileSection}>
+            <Image
+              source={
+                userData?.photoURL
+                  ? { uri: userData.photoURL }
+                  : defaultProfile
+              }
+              style={styles.profileImage}
             />
-            <Pressable style={styles.button} onPress={handleSaveBio}>
-              <Text style={styles.buttonText}>Guardar</Text>
+            <Pressable style={styles.changePhotoButton} onPress={handlePickImage}>
+              <Text style={styles.changePhotoText}>Cambiar foto</Text>
             </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.value}>{bio || "Sin biografía aún."}</Text>
-            <Pressable style={styles.button} onPress={() => setEditingBio(true)}>
-              <Text style={styles.buttonText}>Editar bio</Text>
-            </Pressable>
-          </>
-        )}
+          </View>
 
-        <Pressable style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
-        </Pressable>
+          <View style={styles.section}>
+            <Text style={styles.label}>Nombre:</Text>
+            {editingName ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  style={styles.editInput}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Tu nombre"
+                  placeholderTextColor={Colors.text.light}
+                />
+                <Pressable style={styles.saveButton} onPress={handleSaveName}>
+                  <Text style={styles.saveButtonText}>Guardar</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.valueContainer}>
+                <Text style={styles.value}>{userData?.name || "No especificado"}</Text>
+                <Pressable style={styles.editButton} onPress={() => setEditingName(true)}>
+                  <Text style={styles.editButtonText}>✏️</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
 
-        <Pressable style={styles.searchButton} onPress={() => router.push("/search")}>
-          <Text style={styles.searchButtonText}>Buscar usuarios</Text>
-        </Pressable>
+          <View style={styles.section}>
+            <Text style={styles.label}>Username:</Text>
+            <Text style={styles.value}>@{userData?.username || "desconocido"}</Text>
+          </View>
 
-        <Pressable style={styles.bridgeButton} onPress={() => router.push("/create-bridge")}>
-          <Text style={styles.bridgeButtonText}>Crear puente</Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <View style={styles.section}>
+            <Text style={styles.label}>Email:</Text>
+            <Text style={styles.value}>{userData?.email || "No disponible"}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Ciudad de residencia:</Text>
+            {editingResidenceCity ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  style={styles.editInput}
+                  value={residenceCity}
+                  onChangeText={setResidenceCity}
+                  placeholder="Tu ciudad"
+                  placeholderTextColor={Colors.text.light}
+                />
+                <Pressable style={styles.saveButton} onPress={handleSaveResidenceCity}>
+                  <Text style={styles.saveButtonText}>Guardar</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.valueContainer}>
+                <Text style={styles.value}>{userData?.residenceCity || "No especificada"}</Text>
+                <Pressable style={styles.editButton} onPress={() => setEditingResidenceCity(true)}>
+                  <Text style={styles.editButtonText}>✏️</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Biografía:</Text>
+            {editingBio ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  style={[styles.editInput, { height: 80, textAlignVertical: "top" }]}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="Cuéntanos sobre ti..."
+                  placeholderTextColor={Colors.text.light}
+                  multiline
+                />
+                <Pressable style={styles.saveButton} onPress={handleSaveBio}>
+                  <Text style={styles.saveButtonText}>Guardar</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.valueContainer}>
+                <Text style={styles.value}>{userData?.bio || "No especificada"}</Text>
+                <Pressable style={styles.editButton} onPress={() => setEditingBio(true)}>
+                  <Text style={styles.editButtonText}>✏️</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Miembro desde:</Text>
+            <Text style={styles.value}>
+              {userData?.createdAt?.toDate?.().toLocaleDateString() || "Fecha no disponible"}
+            </Text>
+          </View>
+
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      <BottomNav />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#fff", alignItems: "center" },
-  loading: { marginTop: 50, textAlign: "center", fontSize: 16 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 20 },
-  uploadButton: {
-    backgroundColor: "#ccc",
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.text.secondary,
+    fontFamily: TextStyles.body.fontFamily,
+  },
+  pageTitle: {
+    ...TextStyles.largeTitle,
+    textAlign: "center",
+    marginBottom: 24,
+    color: Colors.text.primary,
+  },
+  profileSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 16,
+    borderWidth: 3,
+    borderColor: Colors.primary,
+  },
+  changePhotoButton: {
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  changePhotoText: {
+    ...TextStyles.button,
+    fontSize: 14,
+  },
+  section: {
+    backgroundColor: Colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  label: {
+    ...TextStyles.body,
+    fontWeight: "bold",
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  value: {
+    ...TextStyles.body,
+    color: Colors.text.secondary,
+  },
+  valueContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  editButton: {
     padding: 8,
-    borderRadius: 6,
-    marginBottom: 20,
   },
-  uploadButtonText: { color: "#333" },
-  label: { fontWeight: "bold", marginTop: 10, alignSelf: "flex-start" },
-  value: { alignSelf: "flex-start", marginBottom: 8 },
-  bioInput: {
+  editButtonText: {
+    fontSize: 18,
+  },
+  editContainer: {
+    gap: 12,
+  },
+  editInput: {
     borderWidth: 1,
-    borderColor: "#aaa",
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
-    textAlignVertical: "top",
-    width: "100%",
+    borderColor: Colors.neutral.lightGray,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: Colors.background,
+    fontSize: 16,
+    fontFamily: TextStyles.body.fontFamily,
+    color: Colors.text.primary,
   },
-  button: {
-    backgroundColor: "#8e44ad",
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 10,
-    alignSelf: "flex-start",
+  saveButton: {
+    backgroundColor: Colors.success,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
   },
-  buttonText: { color: "#fff", fontWeight: "bold" },
+  saveButtonText: {
+    ...TextStyles.button,
+    fontSize: 14,
+  },
   logoutButton: {
-    marginTop: 20,
-    alignSelf: "center",
+    backgroundColor: Colors.error,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  logoutText: {
-    color: "red",
-    fontWeight: "bold",
-  },
-  searchButton: {
-    backgroundColor: "#3498db",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 15,
-    alignSelf: "center",
-  },
-  searchButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  bridgeButton: {
-    backgroundColor: "#f39c12",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    alignSelf: "center",
-  },
-  bridgeButtonText: {
-    color: "#fff",
+  logoutButtonText: {
+    ...TextStyles.button,
+    fontSize: 16,
     fontWeight: "bold",
   },
 });

@@ -19,7 +19,7 @@ export const useGoogleAuth = () => {
 
       const credential = GoogleAuthProvider.credential(null, authentication.accessToken);
       await signInWithCredential(auth, credential);
-      router.replace("/welcome");
+      router.replace("/home");
     }
   };
 

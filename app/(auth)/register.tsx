@@ -1,43 +1,44 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import React, { useState } from "react";
+import { createUserWithEmailAndPassword, onAuthStateChanged, updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/Colors";
+import { TextStyles } from "../../constants/Typography";
 import { auth, db } from "../../firebase/config";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [residenceCity, setResidenceCity] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [birthDate, setBirthDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
+
+  useEffect(() => {
+    // Verificar si el usuario ya está autenticado
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Si ya está logueado, redirigir a /home
+        router.replace("/home");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleRegister = async () => {
-    if (!name || !username || !email || !residenceCity || !password || !confirmPassword) {
-      Alert.alert("Error", "Todos los campos son obligatorios.");
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden.");
+    if (!name || !username || !email || !password || !birthDate) {
+      Alert.alert("Error", "Por favor completa todos los campos.");
       return;
     }
 
@@ -45,24 +46,26 @@ export default function RegisterScreen() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await updateProfile(user, { displayName: name });
-
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        name,
-        username: username.trim().toLowerCase(),
-        email,
-        residenceCity: residenceCity.trim(),
-        birthDate: birthDate.toISOString(),
-        createdAt: serverTimestamp(),
-        photoURL: "",
-        bio: "",
-        currentLocation: null,
-        showCurrentLocation: false,
+      // Actualizar perfil con nombre
+      await updateProfile(user, {
+        displayName: name,
       });
 
-      Alert.alert("Registro exitoso", "Tu cuenta ha sido creada");
-      router.replace("/login");
+      // Guardar datos adicionales en Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        username: username.toLowerCase(),
+        email,
+        birthDate,
+        createdAt: new Date(),
+        photoURL: null,
+        bio: "",
+        residenceCity: "",
+        showCurrentLocation: false,
+        currentLocation: null,
+      });
+
+      router.replace("/home");
     } catch (error: unknown) {
       if (error instanceof Error) {
         Alert.alert("Error", error.message);
@@ -71,50 +74,122 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-    >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Crear cuenta</Text>
-
-        <TextInput style={styles.input} placeholder="Nombre" onChangeText={setName} value={name} />
-        <TextInput style={styles.input} placeholder="Username" onChangeText={setUsername} value={username} />
-        <TextInput style={styles.input} placeholder="Email" onChangeText={setEmail} value={email} keyboardType="email-address" autoCapitalize="none" />
-        <TextInput style={styles.input} placeholder="Ciudad de residencia" onChangeText={setResidenceCity} value={residenceCity} />
-        <TextInput style={styles.input} placeholder="Contraseña" onChangeText={setPassword} value={password} secureTextEntry />
-        <TextInput style={styles.input} placeholder="Confirmar contraseña" onChangeText={setConfirmPassword} value={confirmPassword} secureTextEntry />
-
-        <Pressable style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.dateText}>Fecha de nacimiento: {birthDate.toDateString()}</Text>
-        </Pressable>
-        {showDatePicker && (
-          <DateTimePicker
-            value={birthDate}
-            mode="date"
-            display="default"
-            onChange={(event: any, selectedDate?: Date) => {
-              setShowDatePicker(false);
-              if (selectedDate) setBirthDate(selectedDate);
-            }}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Crear cuenta</Text>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Nombre completo"
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor={Colors.text.light}
           />
-        )}
-
-        <Pressable style={styles.button} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Registrarse</Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Nombre de usuario"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            placeholderTextColor={Colors.text.light}
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Correo electrónico"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholderTextColor={Colors.text.light}
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholderTextColor={Colors.text.light}
+          />
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Fecha de nacimiento (YYYY-MM-DD)"
+            value={birthDate}
+            onChangeText={setBirthDate}
+            placeholderTextColor={Colors.text.light}
+          />
+          
+          <Pressable style={styles.button} onPress={handleRegister}>
+            <Text style={styles.buttonText}>Registrarse</Text>
+          </Pressable>
+          
+          <Pressable style={styles.linkButton} onPress={() => router.push("/login")}>
+            <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia sesión</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center", backgroundColor: "#fff" },
-  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 12, borderRadius: 8 },
-  button: { backgroundColor: "#8e44ad", padding: 12, borderRadius: 8, marginTop: 10 },
-  buttonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
-  dateButton: { padding: 10, backgroundColor: "#eee", borderRadius: 8, marginBottom: 12 },
-  dateText: { color: "#333" },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+  },
+  title: {
+    ...TextStyles.largeTitle,
+    textAlign: "center",
+    marginBottom: 40,
+    color: Colors.text.primary,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.neutral.lightGray,
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.card,
+    fontSize: 16,
+    fontFamily: TextStyles.body.fontFamily,
+    color: Colors.text.primary,
+  },
+  button: {
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    ...TextStyles.button,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  linkButton: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  linkText: {
+    ...TextStyles.body,
+    color: Colors.primary,
+    textDecorationLine: "underline",
+  },
 });

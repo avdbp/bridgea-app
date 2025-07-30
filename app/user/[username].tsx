@@ -11,8 +11,12 @@ import {
     Text,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../../assets/default-profile.png";
+import BottomNav from "../../components/BottomNav";
 import { auth, db } from "../../firebase/config";
+import { Colors } from "../../constants/Colors";
+import { TextStyles } from "../../constants/Typography";
 
 export default function PublicProfileScreen() {
   const { username } = useLocalSearchParams();
@@ -56,90 +60,176 @@ export default function PublicProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#8e44ad" />
-        <Text>Cargando perfil...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Cargando perfil...</Text>
+        </View>
+        <BottomNav />
+      </SafeAreaView>
     );
   }
 
   if (!userData) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.notFound}>Usuario no encontrado</Text>
-        <Pressable style={styles.backButton} onPress={() => router.replace("/search")}>
-          <Text style={styles.backText}>Volver</Text>
-        </Pressable>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.notFound}>Usuario no encontrado</Text>
+          <Pressable style={styles.backButton} onPress={() => router.replace("/search")}>
+            <Text style={styles.backText}>Volver</Text>
+          </Pressable>
+        </View>
+        <BottomNav />
+      </SafeAreaView>
     );
   }
 
   const isCurrentUser = auth.currentUser?.uid === userData.uid;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Image
-        source={userData.photoURL ? { uri: userData.photoURL } : defaultProfile}
-        style={styles.profileImage}
-      />
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Image
+          source={userData.photoURL ? { uri: userData.photoURL } : defaultProfile}
+          style={styles.profileImage}
+        />
 
-      <Text style={styles.name}>{userData.name}</Text>
-      <Text style={styles.username}>@{userData.username}</Text>
+        <Text style={styles.name}>{userData.name}</Text>
+        <Text style={styles.username}>@{userData.username}</Text>
 
-      {isCurrentUser && (
-        <>
-          <Text style={styles.label}>Correo:</Text>
-          <Text style={styles.value}>{userData.email}</Text>
-        </>
-      )}
+        {isCurrentUser && (
+          <View style={styles.section}>
+            <Text style={styles.label}>Correo:</Text>
+            <Text style={styles.value}>{userData.email}</Text>
+          </View>
+        )}
 
-      <Text style={styles.label}>Edad:</Text>
-      <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>Edad:</Text>
+          <Text style={styles.value}>{calculateAge(userData.birthDate)} años</Text>
+        </View>
 
-      {userData.createdAt?.toDate && (
-        <>
-          <Text style={styles.label}>Miembro desde:</Text>
+        {userData.createdAt?.toDate && (
+          <View style={styles.section}>
+            <Text style={styles.label}>Miembro desde:</Text>
+            <Text style={styles.value}>
+              {userData.createdAt.toDate().toLocaleDateString()}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.section}>
+          <Text style={styles.label}>Ciudad de residencia:</Text>
           <Text style={styles.value}>
-            {userData.createdAt.toDate().toLocaleDateString()}
+            {userData.residenceCity || "No especificada"}
           </Text>
-        </>
-      )}
+        </View>
 
-      <Text style={styles.label}>Ciudad de residencia:</Text>
-      <Text style={styles.value}>
-        {userData.residenceCity || "No especificada"}
-      </Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>Ubicación actual:</Text>
+          <Text style={styles.value}>
+            {userData.showCurrentLocation
+              ? userData.currentLocation || "No disponible"
+              : "No disponible actualmente"}
+          </Text>
+        </View>
 
-      <Text style={styles.label}>Ubicación actual:</Text>
-      <Text style={styles.value}>
-        {userData.showCurrentLocation
-          ? userData.currentLocation || "No disponible"
-          : "No disponible actualmente"}
-      </Text>
-
-      <Text style={styles.label}>Biografía:</Text>
-      <Text style={styles.bio}>
-        {userData.bio || "Este usuario aún no ha escrito una bio."}
-      </Text>
-    </ScrollView>
+        <View style={styles.section}>
+          <Text style={styles.label}>Biografía:</Text>
+          <Text style={styles.bio}>
+            {userData.bio || "Este usuario aún no ha escrito una bio."}
+          </Text>
+        </View>
+      </ScrollView>
+      <BottomNav />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, alignItems: "center", backgroundColor: "#fff" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 20 },
-  name: { fontSize: 24, fontWeight: "bold" },
-  username: { fontSize: 16, color: "#555", marginBottom: 10 },
-  label: { marginTop: 10, fontWeight: "bold", alignSelf: "flex-start" },
-  value: { alignSelf: "flex-start", marginBottom: 5 },
-  bio: { marginTop: 10, fontStyle: "italic", textAlign: "center", paddingHorizontal: 10 },
-  notFound: { fontSize: 18, color: "red", marginBottom: 20 },
-  backButton: {
-    backgroundColor: "#8e44ad",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  backText: { color: "#fff", fontWeight: "bold" },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+    alignItems: "center",
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.text.secondary,
+    fontFamily: TextStyles.body.fontFamily,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: Colors.primary,
+  },
+  name: {
+    ...TextStyles.cardTitle,
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  username: {
+    ...TextStyles.secondary,
+    fontSize: 16,
+    marginBottom: 20,
+    color: Colors.text.secondary,
+  },
+  section: {
+    width: "100%",
+    backgroundColor: Colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  label: {
+    ...TextStyles.body,
+    fontWeight: "bold",
+    color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  value: {
+    ...TextStyles.body,
+    color: Colors.text.secondary,
+    marginBottom: 8,
+  },
+  bio: {
+    ...TextStyles.body,
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingHorizontal: 10,
+    color: Colors.text.secondary,
+  },
+  notFound: {
+    ...TextStyles.cardTitle,
+    color: Colors.error,
+    marginBottom: 20,
+  },
+  backButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  backText: {
+    ...TextStyles.button,
+    color: Colors.text.white,
+  },
 });

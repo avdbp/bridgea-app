@@ -2,8 +2,7 @@ import { router } from "expo-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
+    ActivityIndicator,
     Image,
     KeyboardAvoidingView,
     Platform,
@@ -13,137 +12,231 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
+import BottomNav from "../components/BottomNav";
+import { Colors } from "../constants/Colors";
+import { TextStyles } from "../constants/Typography";
 import { db } from "../firebase/config";
 
 export default function SearchScreen() {
-  const [username, setUsername] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
 
   const handleSearch = async () => {
-    if (!username.trim()) {
-      Alert.alert("Error", "Ingresa un username para buscar.");
-      return;
-    }
+    const queryText = searchText.trim().toLowerCase();
+    if (!queryText) return;
 
     setLoading(true);
 
-    try {
-      const searchValue = username.trim().toLowerCase();
-      const endValue = searchValue.replace(/.$/, c =>
-        String.fromCharCode(c.charCodeAt(0) + 1)
-      );
+    const endValue = queryText.replace(/.$/, (c) =>
+      String.fromCharCode(c.charCodeAt(0) + 1)
+    );
 
+    try {
       const q = query(
         collection(db, "users"),
-        where("username", ">=", searchValue),
+        where("username", ">=", queryText),
         where("username", "<", endValue)
       );
 
       const snapshot = await getDocs(q);
+      const results = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      if (snapshot.empty) {
-        setResults([]);
-        Alert.alert("Sin resultados", `No se encontraron usuarios con "${username}"`);
-      } else {
-        const foundUsers = snapshot.docs.map(doc => doc.data());
-        setResults(foundUsers);
-      }
-    } catch (error) {
-      console.log("Error buscando usuario:", error);
-      Alert.alert("Error", "Hubo un problema al buscar el usuario.");
+      setSearchResults(results);
+    } catch (err) {
+      console.error("Error buscando usuarios:", err);
+      setSearchResults([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderUser = ({ item }: { item: any }) => (
-    <Pressable
-      style={styles.resultItem}
-      onPress={() => router.push(`/user/${item.username}`)}
-    >
-      <Image
-        source={item.photoURL ? { uri: item.photoURL } : defaultProfile}
-        style={styles.avatar}
-      />
-      <View>
-        <Text style={styles.resultName}>{item.name}</Text>
-        <Text style={styles.resultUsername}>@{item.username}</Text>
-      </View>
-    </Pressable>
-  );
+  const handleUserPress = (username: string) => {
+    router.push(`/user/${username}`);
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.container}>
-        <Text style={styles.title}>Buscar usuario</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ingresa el username"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
-        <Pressable style={styles.button} onPress={handleSearch} disabled={loading}>
-          <Text style={styles.buttonText}>
-            {loading ? "Buscando..." : "Buscar"}
-          </Text>
-        </Pressable>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.content}>
+          <Text style={styles.title}>Buscar Usuarios 🔍</Text>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Buscar por username..."
+            value={searchText}
+            onChangeText={setSearchText}
+            autoCapitalize="none"
+            placeholderTextColor={Colors.text.light}
+          />
+          
+          <Pressable style={styles.searchButton} onPress={handleSearch} disabled={loading}>
+            <Text style={styles.searchButtonText}>
+              {loading ? "Buscando..." : "Buscar"}
+            </Text>
+          </Pressable>
 
-        <FlatList
-          data={results}
-          keyExtractor={item => item.uid}
-          renderItem={renderUser}
-          contentContainerStyle={styles.resultsList}
-        />
-      </View>
-    </KeyboardAvoidingView>
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loadingText}>Buscando usuarios...</Text>
+            </View>
+          )}
+
+          {searchResults.length > 0 && (
+            <View style={styles.resultsContainer}>
+              <Text style={styles.resultsTitle}>Resultados encontrados:</Text>
+              {searchResults.map((user) => (
+                <Pressable
+                  key={user.id}
+                  style={styles.resultItem}
+                  onPress={() => handleUserPress(user.username)}
+                >
+                  <Image
+                    source={
+                      user.photoURL
+                        ? { uri: user.photoURL }
+                        : defaultProfile
+                    }
+                    style={styles.avatar}
+                  />
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userUsername}>@{user.username}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {searchResults.length === 0 && !loading && searchText.trim() !== "" && (
+            <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>No se encontraron usuarios</Text>
+              <Text style={styles.noResultsSubtext}>
+                Intenta con un username diferente
+              </Text>
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+      <BottomNav />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  title: {
+    ...TextStyles.largeTitle,
+    textAlign: "center",
+    marginBottom: 24,
+    color: Colors.text.primary,
+  },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: Colors.neutral.lightGray,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.card,
+    fontSize: 16,
+    fontFamily: TextStyles.body.fontFamily,
+    color: Colors.text.primary,
     marginBottom: 16,
   },
-  button: {
-    backgroundColor: "#8e44ad",
-    padding: 12,
-    borderRadius: 8,
+  searchButton: {
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  resultsList: {
-    paddingBottom: 20,
+  searchButtonText: {
+    ...TextStyles.button,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.text.secondary,
+    fontFamily: TextStyles.body.fontFamily,
+  },
+  resultsContainer: {
+    flex: 1,
+  },
+  resultsTitle: {
+    ...TextStyles.cardTitle,
+    marginBottom: 16,
+    color: Colors.text.primary,
   },
   resultItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    borderBottomColor: "#ddd",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 16,
   },
-  resultName: {
-    fontWeight: "bold",
-    fontSize: 16,
+  userInfo: {
+    flex: 1,
   },
-  resultUsername: {
-    color: "#666",
+  userName: {
+    ...TextStyles.cardTitle,
+    marginBottom: 4,
+    color: Colors.text.primary,
+  },
+  userUsername: {
+    ...TextStyles.secondary,
+    color: Colors.text.secondary,
+  },
+  noResultsContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  noResultsText: {
+    ...TextStyles.cardTitle,
+    textAlign: "center",
+    marginBottom: 8,
+    color: Colors.text.primary,
+  },
+  noResultsSubtext: {
+    ...TextStyles.body,
+    textAlign: "center",
+    color: Colors.text.secondary,
   },
 });

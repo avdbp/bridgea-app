@@ -1,116 +1,141 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, where } from "firebase/firestore";
+import { router } from "expo-router";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import BottomNav from "../../components/BottomNav";
-import { db } from "../../firebase/config";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/Colors";
+import { TextStyles } from "../../constants/Typography";
+import { auth } from "../../firebase/config";
 
-export default function HomeScreen() {
-  const [bridges, setBridges] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    const fetchPublicBridges = async () => {
-      try {
-        const q = query(
-          collection(db, "bridges"),
-          where("isPublic", "==", true),
-          orderBy("createdAt", "desc")
-        );
-        const snapshot = await getDocs(q);
-
-        const bridgesRaw = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as { [key: string]: any }),
-        }));
-
-        const bridgesWithAuthorData = await Promise.all(
-          bridgesRaw.map(async (bridge: any) => {
-            const userDoc = await getDoc(doc(db, "users", bridge.senderId));
-            const userData = userDoc.exists() ? userDoc.data() : {};
-            return {
-              ...bridge,
-              authorUsername: userData.username || "desconocido",
-              authorName: userData.name || "",
-              authorPhoto: userData.photoURL || null,
-            };
-          })
-        );
-
-        setBridges(bridgesWithAuthorData);
-      } catch (error) {
-        console.error("Error fetching bridges:", error);
-      } finally {
-        setLoading(false);
+    // Verificar si el usuario ya está autenticado
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Si ya está logueado, redirigir a /home
+        router.replace("/home");
       }
-    };
+    });
 
-    fetchPublicBridges();
+    return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#8e44ad" />
-        <Text>Cargando puentes públicos...</Text>
-      </View>
-    );
-  }
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Por favor completa todos los campos.");
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.replace("/home");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        Alert.alert("Error", error.message);
+      }
+    }
+  };
 
   return (
-    <View style={styles.screen}>
-      <ScrollView style={styles.container}>
-        {bridges.length === 0 ? (
-          <Text style={styles.empty}>No hay puentes públicos todavía.</Text>
-        ) : (
-          bridges.map((bridge) => (
-            <View key={bridge.id} style={styles.bridgeCard}>
-              <View style={styles.authorInfo}>
-                <Image
-                  source={
-                    bridge.authorPhoto
-                      ? { uri: bridge.authorPhoto }
-                      : require("../assets/default-profile.png")
-                  }
-                  style={styles.avatar}
-                />
-                <View>
-                  <Text style={styles.authorName}>{bridge.authorName}</Text>
-                  <Text style={styles.authorUsername}>@{bridge.authorUsername}</Text>
-                </View>
-              </View>
-              <Text style={styles.content}>{bridge.content}</Text>
-              <Text style={styles.date}>
-                {bridge.createdAt?.toDate
-                  ? bridge.createdAt.toDate().toLocaleString()
-                  : "Fecha desconocida"}
-              </Text>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      <BottomNav />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Iniciar sesión</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Correo electrónico"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholderTextColor={Colors.text.light}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholderTextColor={Colors.text.light}
+          />
+          <Pressable style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Iniciar sesión</Text>
+          </Pressable>
+          <Pressable style={styles.linkButton} onPress={() => router.push("/register")}>
+            <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  empty: { textAlign: "center", marginTop: 20, color: "#999" },
-  bridgeCard: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#fdfdfd",
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  authorInfo: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  authorName: { fontWeight: "bold" },
-  authorUsername: { color: "#666", fontSize: 12 },
-  content: { marginVertical: 8 },
-  date: { fontSize: 12, color: "#999", textAlign: "right" },
+  scrollContent: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+  },
+  title: {
+    ...TextStyles.largeTitle,
+    textAlign: "center",
+    marginBottom: 40,
+    color: Colors.text.primary,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.neutral.lightGray,
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.card,
+    fontSize: 16,
+    fontFamily: TextStyles.body.fontFamily,
+    color: Colors.text.primary,
+  },
+  button: {
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    ...TextStyles.button,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  linkButton: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  linkText: {
+    ...TextStyles.body,
+    color: Colors.primary,
+    textDecorationLine: "underline",
+  },
 });
