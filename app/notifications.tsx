@@ -8,6 +8,9 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -319,79 +322,91 @@ export default function NotificationsScreen() {
 
       {showNewMessage && (
         <View style={styles.newMessageModal}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Nuevo Mensaje</Text>
-            
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Buscar usuario (@username o nombre)"
-                value={newMessageRecipient}
-                onChangeText={(text) => {
-                  setNewMessageRecipient(text);
-                  searchUsers(text);
-                }}
-                placeholderTextColor={Colors.text.light}
-              />
-              {isSearching && (
-                <View style={styles.searchingIndicator}>
-                  <Text style={styles.searchingText}>Buscando...</Text>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoidingView}
+          >
+            <ScrollView 
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Nuevo Mensaje</Text>
+                
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Buscar usuario (@username o nombre)"
+                    value={newMessageRecipient}
+                    onChangeText={(text) => {
+                      setNewMessageRecipient(text);
+                      searchUsers(text);
+                    }}
+                    placeholderTextColor={Colors.text.light}
+                  />
+                  {isSearching && (
+                    <View style={styles.searchingIndicator}>
+                      <Text style={styles.searchingText}>Buscando...</Text>
+                    </View>
+                  )}
+                  
+                  {showSearchResults && searchResults.length > 0 && (
+                    <View style={styles.searchResults}>
+                      {searchResults.map((user) => (
+                        <Pressable
+                          key={user.id}
+                          style={styles.searchResultItem}
+                          onPress={() => selectUser(user)}
+                        >
+                          <View style={styles.userInfo}>
+                            <Text style={styles.username}>@{user.username}</Text>
+                            <Text style={styles.userName}>{user.name}</Text>
+                          </View>
+                          <Feather name="chevron-right" size={16} color={Colors.text.light} />
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                  
+                  {showSearchResults && searchResults.length === 0 && newMessageRecipient.length >= 2 && (
+                    <View style={styles.noResults}>
+                      <Text style={styles.noResultsText}>No se encontraron usuarios</Text>
+                    </View>
+                  )}
                 </View>
-              )}
-              
-              {showSearchResults && searchResults.length > 0 && (
-                <View style={styles.searchResults}>
-                  {searchResults.map((user) => (
-                    <Pressable
-                      key={user.id}
-                      style={styles.searchResultItem}
-                      onPress={() => selectUser(user)}
-                    >
-                      <View style={styles.userInfo}>
-                        <Text style={styles.username}>@{user.username}</Text>
-                        <Text style={styles.userName}>{user.name}</Text>
-                      </View>
-                      <Feather name="chevron-right" size={16} color={Colors.text.light} />
-                    </Pressable>
-                  ))}
+                
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Mensaje..."
+                  value={newMessageContent}
+                  onChangeText={setNewMessageContent}
+                  multiline
+                  numberOfLines={4}
+                  placeholderTextColor={Colors.text.light}
+                  textAlignVertical="top"
+                />
+                <View style={styles.modalButtons}>
+                  <Pressable 
+                    style={[styles.button, styles.cancelButton]}
+                    onPress={() => {
+                      setShowNewMessage(false);
+                      setShowSearchResults(false);
+                      setSearchResults([]);
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable 
+                    style={[styles.button, styles.sendButton]}
+                    onPress={sendMessage}
+                  >
+                    <Text style={styles.sendButtonText}>Enviar</Text>
+                  </Pressable>
                 </View>
-              )}
-              
-              {showSearchResults && searchResults.length === 0 && newMessageRecipient.length >= 2 && (
-                <View style={styles.noResults}>
-                  <Text style={styles.noResultsText}>No se encontraron usuarios</Text>
-                </View>
-              )}
-            </View>
-            
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Mensaje..."
-              value={newMessageContent}
-              onChangeText={setNewMessageContent}
-              multiline
-              numberOfLines={4}
-              placeholderTextColor={Colors.text.light}
-            />
-            <View style={styles.modalButtons}>
-              <Pressable 
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => {
-                  setShowNewMessage(false);
-                  setShowSearchResults(false);
-                  setSearchResults([]);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
-              </Pressable>
-              <Pressable 
-                style={[styles.button, styles.sendButton]}
-                onPress={sendMessage}
-              >
-                <Text style={styles.sendButtonText}>Enviar</Text>
-              </Pressable>
-            </View>
-          </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       )}
 
@@ -648,5 +663,15 @@ const styles = StyleSheet.create({
     ...TextStyles.body,
     color: Colors.text.light,
     textAlign: 'center',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
 }); 
