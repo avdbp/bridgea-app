@@ -25,6 +25,7 @@ import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
 import { uploadProfileImageToCloudinary } from "../services/cloudinaryService";
+import locationService, { LocationData } from "../services/locationService";
 
 export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
@@ -35,6 +36,8 @@ export default function ProfileScreen() {
   const [editingName, setEditingName] = useState(false);
   const [editingResidenceCity, setEditingResidenceCity] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
+  const [updatingLocation, setUpdatingLocation] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -57,6 +60,11 @@ export default function ProfileScreen() {
         setName(data.name || "");
         setResidenceCity(data.residenceCity || "");
         setBio(data.bio || "");
+        
+        // Cargar ubicación actual si existe
+        if (data.currentLocation) {
+          setCurrentLocation(data.currentLocation);
+        }
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -158,6 +166,27 @@ export default function ProfileScreen() {
       setUserData({ ...userData, showCurrentLocation: newLocationStatus });
     } catch (error) {
       console.error("Error updating location status:", error);
+    }
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!auth.currentUser) return;
+    
+    setUpdatingLocation(true);
+    try {
+      const locationData = await locationService.getAndUpdateLocation(auth.currentUser.uid);
+      if (locationData) {
+        setCurrentLocation(locationData);
+        setUserData({ ...userData, currentLocation: locationData });
+        Alert.alert("Éxito", "Ubicación actualizada correctamente");
+      } else {
+        Alert.alert("Error", "No se pudo obtener la ubicación actual");
+      }
+    } catch (error) {
+      console.error("Error updating location:", error);
+      Alert.alert("Error", "No se pudo actualizar la ubicación");
+    } finally {
+      setUpdatingLocation(false);
     }
   };
 
@@ -319,6 +348,41 @@ export default function ProfileScreen() {
                 />
               </Pressable>
             </View>
+            
+            {currentLocation && (
+              <View style={styles.locationContainer}>
+                <Text style={styles.locationText}>
+                  📍 {locationService.formatAddress(currentLocation)}
+                </Text>
+                <Pressable 
+                  style={styles.updateLocationButton} 
+                  onPress={handleUpdateLocation}
+                  disabled={updatingLocation}
+                >
+                  <Feather 
+                    name="refresh-cw" 
+                    size={16} 
+                    color={Colors.primary} 
+                  />
+                  <Text style={styles.updateLocationText}>
+                    {updatingLocation ? "Actualizando..." : "Actualizar"}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+            
+            {!currentLocation && (
+              <Pressable 
+                style={styles.getLocationButton} 
+                onPress={handleUpdateLocation}
+                disabled={updatingLocation}
+              >
+                <Feather name="map-pin" size={16} color={Colors.text.white} />
+                <Text style={styles.getLocationText}>
+                  {updatingLocation ? "Obteniendo ubicación..." : "Obtener ubicación actual"}
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.section}>
@@ -424,6 +488,45 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     padding: 8,
+  },
+  locationContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: Colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  locationText: {
+    ...TextStyles.body,
+    color: Colors.text.secondary,
+    marginBottom: 8,
+  },
+  updateLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 8,
+  },
+  updateLocationText: {
+    ...TextStyles.body,
+    color: Colors.primary,
+    fontSize: 14,
+  },
+  getLocationButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  getLocationText: {
+    ...TextStyles.body,
+    color: Colors.text.white,
+    fontSize: 14,
   },
   editContainer: {
     gap: 12,
