@@ -57,40 +57,55 @@ export default function NotificationsScreen() {
   useEffect(() => {
     if (!user) return;
 
-    // Escuchar notificaciones
-    const notificationsQuery = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
+    // Solución temporal: usar getDocs en lugar de onSnapshot para evitar errores de índices
+    const fetchData = async () => {
+      try {
+        // Fetch notifications
+        const notificationsQuery = query(
+          collection(db, 'notifications'),
+          where('recipientId', '==', user.uid)
+        );
+        const notificationsSnapshot = await getDocs(notificationsQuery);
+        const notifications = notificationsSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .sort((a: any, b: any) => {
+            const aTime = a.createdAt?.toDate?.() || new Date(0);
+            const bTime = b.createdAt?.toDate?.() || new Date(0);
+            return bTime.getTime() - aTime.getTime();
+          }) as Notification[];
+        setNotifications(notifications);
 
-    const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-      const notificationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Notification[];
-      setNotifications(notificationsData);
-    });
-
-    // Escuchar mensajes
-    const messagesQuery = query(
-      collection(db, 'messages'),
-      where('recipientId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Message[];
-      setMessages(messagesData);
-    });
-
-    return () => {
-      unsubscribeNotifications();
-      unsubscribeMessages();
+        // Fetch messages
+        const messagesQuery = query(
+          collection(db, 'messages'),
+          where('recipientId', '==', user.uid)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const messages = messagesSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .sort((a: any, b: any) => {
+            const aTime = a.createdAt?.toDate?.() || new Date(0);
+            const bTime = b.createdAt?.toDate?.() || new Date(0);
+            return bTime.getTime() - aTime.getTime();
+          }) as Message[];
+        setMessages(messages);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     };
+
+    fetchData();
+
+    // Polling cada 10 segundos para actualizaciones
+    const interval = setInterval(fetchData, 10000);
+
+    return () => clearInterval(interval);
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {

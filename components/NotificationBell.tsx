@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { TextStyles } from '../constants/Typography';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 
@@ -20,36 +20,45 @@ export default function NotificationBell({ onPress }: NotificationBellProps) {
   useEffect(() => {
     if (!user) return;
 
-    // Escuchar notificaciones no leídas
-    const notificationsQuery = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', user.uid),
-      where('read', '==', false)
-    );
+    // Solución temporal: usar getDocs en lugar de onSnapshot para evitar errores de índices
+    const fetchUnreadCount = async () => {
+      try {
+        const notificationsQuery = query(
+          collection(db, 'notifications'),
+          where('recipientId', '==', user.uid),
+          where('read', '==', false)
+        );
+        const snapshot = await getDocs(notificationsQuery);
+        const count = snapshot.size;
+        setNotificationCount(count);
+        setHasUnreadNotifications(count > 0);
 
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const count = snapshot.size;
-      setNotificationCount(count);
-      setHasUnreadNotifications(count > 0);
-
-      // Animar la campana si hay notificaciones nuevas
-      if (count > 0) {
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
+        // Animar la campana si hay notificaciones nuevas
+        if (count > 0) {
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 1.2,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        }
+      } catch (error) {
+        console.error('Error fetching unread notifications:', error);
       }
-    });
+    };
 
-    return () => unsubscribe();
+    fetchUnreadCount();
+
+    // Polling cada 5 segundos para actualizaciones
+    const interval = setInterval(fetchUnreadCount, 5000);
+
+    return () => clearInterval(interval);
   }, [user]);
 
   return (
