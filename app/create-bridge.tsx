@@ -262,6 +262,7 @@ export default function CreateBridgeScreen() {
             user.id,
             senderName,
             title.trim(),
+            senderId,
             true // Es privado
           )
         );

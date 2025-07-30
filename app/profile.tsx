@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
 import BottomNav from "../components/BottomNav";
 import NotificationStatus from "../components/NotificationStatus";
+import NotificationBell from "../components/NotificationBell";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
@@ -148,6 +149,18 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleToggleLocation = async () => {
+    try {
+      const newLocationStatus = !userData?.showCurrentLocation;
+      await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+        showCurrentLocation: newLocationStatus,
+      });
+      setUserData({ ...userData, showCurrentLocation: newLocationStatus });
+    } catch (error) {
+      console.error("Error updating location status:", error);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -175,7 +188,10 @@ export default function ProfileScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.pageTitle}>Mi Perfil</Text>
+          <View style={styles.header}>
+            <Text style={styles.pageTitle}>Mi Perfil</Text>
+            <NotificationBell onPress={() => router.push('/notifications')} />
+          </View>
 
           <View style={styles.profileSection}>
             <Image
@@ -287,6 +303,25 @@ export default function ProfileScreen() {
 
           {/* Componente de estado de notificaciones */}
           <View style={styles.section}>
+            <Text style={styles.label}>Ubicación actual:</Text>
+            <View style={styles.valueContainer}>
+              <Text style={styles.value}>
+                {userData?.showCurrentLocation ? "Visible públicamente" : "Oculta"}
+              </Text>
+              <Pressable 
+                style={styles.toggleButton} 
+                onPress={handleToggleLocation}
+              >
+                <Feather 
+                  name={userData?.showCurrentLocation ? "eye-off" : "eye"} 
+                  size={16} 
+                  color={Colors.primary} 
+                />
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.section}>
             <Text style={styles.label}>Notificaciones:</Text>
             <NotificationStatus userId={auth.currentUser?.uid} />
           </View>
@@ -321,10 +356,16 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontFamily: TextStyles.body.fontFamily,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
   pageTitle: {
     ...TextStyles.largeTitle,
     textAlign: "center",
-    marginBottom: 24,
+    flex: 1,
     color: Colors.text.primary,
   },
   profileSection: {
@@ -379,6 +420,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   editButton: {
+    padding: 8,
+  },
+  toggleButton: {
     padding: 8,
   },
   editContainer: {

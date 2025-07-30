@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 // Configurar el comportamiento de las notificaciones
@@ -244,6 +244,7 @@ class NotificationService {
     recipientId: string, 
     senderName: string, 
     bridgeTitle: string,
+    senderId: string,
     isPrivate: boolean = false
   ): Promise<boolean> {
     const notification: NotificationData = {
@@ -258,6 +259,24 @@ class NotificationService {
       sound: true,
       // No incluir badge para evitar problemas con valores nil
     };
+
+    // Guardar notificación en Firestore
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        type: 'bridge_received',
+        title: notification.title,
+        body: notification.body,
+        senderId: senderId,
+        senderName: senderName,
+        recipientId: recipientId,
+        read: false,
+        createdAt: serverTimestamp(),
+        data: notification.data,
+      });
+      console.log('✅ Notificación guardada en Firestore');
+    } catch (error) {
+      console.error('❌ Error guardando notificación en Firestore:', error);
+    }
 
     return await this.sendPushNotification(recipientId, notification);
   }

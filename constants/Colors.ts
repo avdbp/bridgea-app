@@ -30,6 +30,7 @@ export const Colors = {
   // Colores de fondo
   background: '#F5F5F5',
   card: '#FFFFFF',
+  border: '#E0E0E0',
   
   // Colores de texto
   text: {
