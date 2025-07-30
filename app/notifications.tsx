@@ -309,7 +309,6 @@ export default function NotificationsScreen() {
 
   const renderMessage = ({ item }: { item: Message }) => (
     <Pressable 
-      key={item.uniqueKey || item.id}
       style={[styles.messageItem, !item.read && styles.unreadItem]}
       onPress={() => openConversation(item)}
     >
@@ -381,7 +380,7 @@ export default function NotificationsScreen() {
         <FlatList
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.uniqueKey || item.id}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
