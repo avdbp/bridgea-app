@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/Colors';
@@ -68,72 +68,74 @@ export default function NotificationsScreen() {
   const [showSearchResults, setShowSearchResults] = useState(false);
 
 
+  // Función para obtener datos
+  const fetchData = async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch notifications
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('recipientId', '==', user.uid)
+      );
+      const notificationsSnapshot = await getDocs(notificationsQuery);
+      const notifications = notificationsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .sort((a: any, b: any) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime.getTime() - aTime.getTime();
+        }) as Notification[];
+      setNotifications(notifications);
+
+      // Fetch messages (recibidos y enviados)
+      const receivedMessagesQuery = query(
+        collection(db, 'messages'),
+        where('recipientId', '==', user.uid)
+      );
+      const sentMessagesQuery = query(
+        collection(db, 'messages'),
+        where('senderId', '==', user.uid)
+      );
+      
+      const [receivedSnapshot, sentSnapshot] = await Promise.all([
+        getDocs(receivedMessagesQuery),
+        getDocs(sentMessagesQuery)
+      ]);
+
+      const receivedMessages = receivedSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+
+      const sentMessages = sentSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+
+      // Combinar y ordenar todos los mensajes con keys únicas
+      const allMessages = [...receivedMessages, ...sentMessages]
+        .map((msg, index) => ({
+          ...msg,
+          uniqueKey: `${msg.id}_${msg.senderId}_${index}` // Crear key única
+        }))
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime.getTime() - aTime.getTime();
+        });
+
+      setMessages(allMessages);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
-
-    // Solución temporal: usar getDocs en lugar de onSnapshot para evitar errores de índices
-    const fetchData = async () => {
-      try {
-        // Fetch notifications
-        const notificationsQuery = query(
-          collection(db, 'notifications'),
-          where('recipientId', '==', user.uid)
-        );
-        const notificationsSnapshot = await getDocs(notificationsQuery);
-        const notifications = notificationsSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .sort((a: any, b: any) => {
-            const aTime = a.createdAt?.toDate?.() || new Date(0);
-            const bTime = b.createdAt?.toDate?.() || new Date(0);
-            return bTime.getTime() - aTime.getTime();
-          }) as Notification[];
-        setNotifications(notifications);
-
-        // Fetch messages (recibidos y enviados)
-        const receivedMessagesQuery = query(
-          collection(db, 'messages'),
-          where('recipientId', '==', user.uid)
-        );
-        const sentMessagesQuery = query(
-          collection(db, 'messages'),
-          where('senderId', '==', user.uid)
-        );
-        
-        const [receivedSnapshot, sentSnapshot] = await Promise.all([
-          getDocs(receivedMessagesQuery),
-          getDocs(sentMessagesQuery)
-        ]);
-
-        const receivedMessages = receivedSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Message[];
-
-        const sentMessages = sentSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Message[];
-
-        // Combinar y ordenar todos los mensajes con keys únicas
-        const allMessages = [...receivedMessages, ...sentMessages]
-          .map((msg, index) => ({
-            ...msg,
-            uniqueKey: `${msg.id}_${msg.senderId}_${index}` // Crear key única
-          }))
-          .sort((a, b) => {
-            const aTime = a.createdAt?.toDate?.() || new Date(0);
-            const bTime = b.createdAt?.toDate?.() || new Date(0);
-            return bTime.getTime() - aTime.getTime();
-          });
-
-        setMessages(allMessages);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
 
     fetchData();
 
@@ -291,6 +293,68 @@ export default function NotificationsScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
+  const deleteConversation = async (message: Message) => {
+    try {
+      // Mostrar confirmación
+      Alert.alert(
+        'Eliminar Conversación',
+        '¿Estás seguro de que quieres eliminar toda esta conversación? Esta acción no se puede deshacer.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Eliminar',
+            style: 'destructive',
+            onPress: async () => {
+              // Determinar el otro usuario de la conversación
+              const otherUserId = message.senderId === user?.uid 
+                ? message.recipientId 
+                : message.senderId;
+              
+              // Eliminar todos los mensajes de esta conversación
+              const messagesRef = collection(db, 'messages');
+              
+              // Buscar mensajes enviados por el usuario actual al otro usuario
+              const sentQuery = query(
+                messagesRef,
+                where('senderId', '==', user?.uid),
+                where('recipientId', '==', otherUserId)
+              );
+              
+              // Buscar mensajes recibidos por el usuario actual del otro usuario
+              const receivedQuery = query(
+                messagesRef,
+                where('senderId', '==', otherUserId),
+                where('recipientId', '==', user?.uid)
+              );
+              
+              // Eliminar mensajes enviados
+              const sentSnapshot = await getDocs(sentQuery);
+              const deletePromises = sentSnapshot.docs.map(doc => deleteDoc(doc.ref));
+              
+              // Eliminar mensajes recibidos
+              const receivedSnapshot = await getDocs(receivedQuery);
+              const receivedDeletePromises = receivedSnapshot.docs.map(doc => deleteDoc(doc.ref));
+              
+              // Ejecutar todas las eliminaciones
+              await Promise.all([...deletePromises, ...receivedDeletePromises]);
+              
+              // Recargar datos
+              fetchData();
+              
+              Alert.alert('Éxito', 'Conversación eliminada correctamente');
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error al eliminar conversación:', error);
+      Alert.alert('Error', 'No se pudo eliminar la conversación');
+    }
+  };
+
   const renderNotification = ({ item }: { item: Notification }) => (
     <Pressable 
       style={[styles.notificationItem, !item.read && styles.unreadItem]}
@@ -308,26 +372,34 @@ export default function NotificationsScreen() {
   );
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <Pressable 
-      style={[styles.messageItem, !item.read && styles.unreadItem]}
-      onPress={() => openConversation(item)}
-    >
-      <View style={styles.messageHeader}>
-        <Text style={styles.messageSender}>
-          {item.senderId === user?.uid ? 'Tú' : item.senderName}
-        </Text>
-        <Text style={styles.messageTime}>
-          {item.createdAt?.toDate?.().toLocaleDateString() || 'Ahora'}
-        </Text>
-      </View>
-      <Text style={styles.messageContent}>{item.content}</Text>
-      <View style={styles.messageDirection}>
-        <Text style={styles.messageDirectionText}>
-          {item.senderId === user?.uid ? 'Enviado' : 'Recibido'}
-        </Text>
-      </View>
-      {!item.read && item.senderId !== user?.uid && <View style={styles.unreadDot} />}
-    </Pressable>
+    <View style={[styles.messageItem, !item.read && styles.unreadItem]}>
+      <Pressable 
+        style={styles.messageContentContainer}
+        onPress={() => openConversation(item)}
+      >
+        <View style={styles.messageHeader}>
+          <Text style={styles.messageSender}>
+            {item.senderId === user?.uid ? 'Tú' : item.senderName}
+          </Text>
+          <Text style={styles.messageTime}>
+            {item.createdAt?.toDate?.().toLocaleDateString() || 'Ahora'}
+          </Text>
+        </View>
+        <Text style={styles.messageContent}>{item.content}</Text>
+        <View style={styles.messageDirection}>
+          <Text style={styles.messageDirectionText}>
+            {item.senderId === user?.uid ? 'Enviado' : 'Recibido'}
+          </Text>
+        </View>
+        {!item.read && item.senderId !== user?.uid && <View style={styles.unreadDot} />}
+      </Pressable>
+      <Pressable 
+        style={styles.deleteButton}
+        onPress={() => deleteConversation(item)}
+      >
+        <Feather name="trash-2" size={20} color={Colors.error} />
+      </Pressable>
+    </View>
   );
 
   return (
@@ -756,6 +828,15 @@ const styles = StyleSheet.create({
     ...TextStyles.caption,
     color: Colors.text.light,
     fontSize: 10,
+  },
+  messageContentContainer: {
+    flex: 1,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
 }); 
