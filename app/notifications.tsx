@@ -47,6 +47,16 @@ interface Message {
   uniqueKey?: string; // Key única para evitar duplicados
 }
 
+interface Conversation {
+  id: string; // ID único de la conversación (combinación de usuarios)
+  otherUserId: string;
+  otherUserName: string;
+  lastMessage: string;
+  lastMessageTime: any;
+  unreadCount: number;
+  isFromCurrentUser: boolean;
+}
+
 export default function NotificationsScreen() {
   const { user } = useAuth();
   const { openMessages, recipientUsername } = useLocalSearchParams<{ 
@@ -55,6 +65,7 @@ export default function NotificationsScreen() {
   }>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeTab, setActiveTab] = useState<'notifications' | 'messages'>(
     openMessages === 'true' ? 'messages' : 'notifications'
   );
@@ -116,19 +127,71 @@ export default function NotificationsScreen() {
         ...doc.data()
       })) as Message[];
 
-      // Combinar y ordenar todos los mensajes con keys únicas
+      // Combinar todos los mensajes
       const allMessages = [...receivedMessages, ...sentMessages]
         .map((msg, index) => ({
           ...msg,
           uniqueKey: `${msg.id}_${msg.senderId}_${index}` // Crear key única
-        }))
+        }));
+
+      setMessages(allMessages);
+
+      // Agrupar mensajes por conversación
+      const conversationMap = new Map<string, Conversation>();
+
+      allMessages.forEach(message => {
+        // Determinar el otro usuario de la conversación
+        const otherUserId = message.senderId === user.uid 
+          ? message.recipientId 
+          : message.senderId;
+        
+        const otherUserName = message.senderId === user.uid 
+          ? message.recipientName 
+          : message.senderName;
+
+        // Crear ID único para la conversación (ordenar IDs para consistencia)
+        const conversationId = [user.uid, otherUserId].sort().join('_');
+
+        if (!conversationMap.has(conversationId)) {
+          // Crear nueva conversación
+          conversationMap.set(conversationId, {
+            id: conversationId,
+            otherUserId,
+            otherUserName,
+            lastMessage: message.content,
+            lastMessageTime: message.createdAt,
+            unreadCount: message.senderId !== user.uid && !message.read ? 1 : 0,
+            isFromCurrentUser: message.senderId === user.uid
+          });
+        } else {
+          // Actualizar conversación existente
+          const conversation = conversationMap.get(conversationId)!;
+          const messageTime = message.createdAt?.toDate?.() || new Date(0);
+          const lastTime = conversation.lastMessageTime?.toDate?.() || new Date(0);
+
+          // Actualizar solo si este mensaje es más reciente
+          if (messageTime > lastTime) {
+            conversation.lastMessage = message.content;
+            conversation.lastMessageTime = message.createdAt;
+            conversation.isFromCurrentUser = message.senderId === user.uid;
+          }
+
+          // Contar mensajes no leídos
+          if (message.senderId !== user.uid && !message.read) {
+            conversation.unreadCount += 1;
+          }
+        }
+      });
+
+      // Convertir a array y ordenar por último mensaje
+      const conversationsArray = Array.from(conversationMap.values())
         .sort((a, b) => {
-          const aTime = a.createdAt?.toDate?.() || new Date(0);
-          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
+          const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
           return bTime.getTime() - aTime.getTime();
         });
 
-      setMessages(allMessages);
+      setConversations(conversationsArray);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -205,17 +268,14 @@ export default function NotificationsScreen() {
     setSearchResults([]);
   };
 
-  const openConversation = async (message: Message) => {
+  const openConversation = async (conversation: Conversation) => {
     if (!user) return;
-    
-    const otherUserId = message.senderId === user.uid ? message.recipientId : message.senderId;
-    const otherUserName = message.senderId === user.uid ? message.recipientName : message.senderName;
     
     // Buscar el username del otro usuario
     try {
       const userQuery = query(
         collection(db, 'users'),
-        where('__name__', '==', otherUserId)
+        where('__name__', '==', conversation.otherUserId)
       );
       const userSnapshot = await getDocs(userQuery);
       const otherUserUsername = userSnapshot.docs[0]?.data()?.username || 'usuario';
@@ -223,8 +283,8 @@ export default function NotificationsScreen() {
       router.push({
         pathname: '/conversation',
         params: {
-          otherUserId,
-          otherUserName,
+          otherUserId: conversation.otherUserId,
+          otherUserName: conversation.otherUserName,
           otherUserUsername
         }
       });
@@ -234,8 +294,8 @@ export default function NotificationsScreen() {
       router.push({
         pathname: '/conversation',
         params: {
-          otherUserId,
-          otherUserName,
+          otherUserId: conversation.otherUserId,
+          otherUserName: conversation.otherUserName,
           otherUserUsername: 'usuario'
         }
       });
@@ -293,7 +353,7 @@ export default function NotificationsScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const deleteConversation = async (message: Message) => {
+  const deleteConversation = async (conversation: Conversation) => {
     try {
       // Mostrar confirmación
       Alert.alert(
@@ -308,11 +368,6 @@ export default function NotificationsScreen() {
             text: 'Eliminar',
             style: 'destructive',
             onPress: async () => {
-              // Determinar el otro usuario de la conversación
-              const otherUserId = message.senderId === user?.uid 
-                ? message.recipientId 
-                : message.senderId;
-              
               // Eliminar todos los mensajes de esta conversación
               const messagesRef = collection(db, 'messages');
               
@@ -320,13 +375,13 @@ export default function NotificationsScreen() {
               const sentQuery = query(
                 messagesRef,
                 where('senderId', '==', user?.uid),
-                where('recipientId', '==', otherUserId)
+                where('recipientId', '==', conversation.otherUserId)
               );
               
               // Buscar mensajes recibidos por el usuario actual del otro usuario
               const receivedQuery = query(
                 messagesRef,
-                where('senderId', '==', otherUserId),
+                where('senderId', '==', conversation.otherUserId),
                 where('recipientId', '==', user?.uid)
               );
               
@@ -371,27 +426,29 @@ export default function NotificationsScreen() {
     </Pressable>
   );
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View style={[styles.messageItem, !item.read && styles.unreadItem]}>
+  const renderConversation = ({ item }: { item: Conversation }) => (
+    <View style={[styles.messageItem, item.unreadCount > 0 && styles.unreadItem]}>
       <Pressable 
         style={styles.messageContentContainer}
         onPress={() => openConversation(item)}
       >
         <View style={styles.messageHeader}>
           <Text style={styles.messageSender}>
-            {item.senderId === user?.uid ? 'Tú' : item.senderName}
+            {item.otherUserName}
           </Text>
           <Text style={styles.messageTime}>
-            {item.createdAt?.toDate?.().toLocaleDateString() || 'Ahora'}
+            {item.lastMessageTime?.toDate?.().toLocaleDateString() || 'Ahora'}
           </Text>
         </View>
-        <Text style={styles.messageContent}>{item.content}</Text>
+        <Text style={styles.messageContent}>
+          {item.isFromCurrentUser ? 'Tú: ' : ''}{item.lastMessage}
+        </Text>
         <View style={styles.messageDirection}>
           <Text style={styles.messageDirectionText}>
-            {item.senderId === user?.uid ? 'Enviado' : 'Recibido'}
+            {item.isFromCurrentUser ? 'Enviado' : 'Recibido'}
           </Text>
         </View>
-        {!item.read && item.senderId !== user?.uid && <View style={styles.unreadDot} />}
+        {item.unreadCount > 0 && <View style={styles.unreadDot} />}
       </Pressable>
       <Pressable 
         style={styles.deleteButton}
@@ -450,16 +507,16 @@ export default function NotificationsScreen() {
         />
       ) : (
         <FlatList
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.uniqueKey || item.id}
+          data={conversations}
+          renderItem={renderConversation}
+          keyExtractor={(item) => item.id}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Feather name="message-circle" size={48} color={Colors.text.light} />
-              <Text style={styles.emptyText}>No hay mensajes</Text>
+              <Text style={styles.emptyText}>No hay conversaciones</Text>
             </View>
           }
         />
