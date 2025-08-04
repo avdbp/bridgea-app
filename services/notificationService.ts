@@ -82,13 +82,19 @@ class NotificationService {
   async getToken(): Promise<string | null> {
     try {
       if (!Device.isDevice) {
-        console.log('⚠️ No es un dispositivo físico');
+        console.log('📱 Usando simulador - notificaciones locales disponibles');
         return null;
       }
 
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
       if (!projectId || projectId === 'your-project-id-here') {
-        console.log('⚠️ ProjectId no configurado, usando notificaciones locales únicamente');
+        console.log('🔔 Modo desarrollo: notificaciones locales activas');
+        return null;
+      }
+
+      // Solo intentar obtener token si estamos en un build de desarrollo o producción
+      if (__DEV__) {
+        console.log('🔔 Modo desarrollo: usando notificaciones locales');
         return null;
       }
 
@@ -97,7 +103,7 @@ class NotificationService {
       });
 
       this.currentToken = token.data;
-      console.log('🔔 Token de notificación obtenido:', token.data);
+      console.log('🔔 Token de notificación obtenido');
       return token.data;
     } catch (error) {
       console.error('❌ Error obteniendo token:', error);
