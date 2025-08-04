@@ -100,7 +100,13 @@ WARN [Reanimated] Reduced motion setting is enabled
 
 ## ✅ **Conclusión**
 
-**El sistema está funcionando correctamente.** Los warnings son normales en Expo Go y no afectan la funcionalidad. Las notificaciones locales funcionan perfectamente para el desarrollo y testing.
+**El sistema está funcionando correctamente y listo para EAS.** Los warnings son normales en Expo Go y no afectan la funcionalidad. Las notificaciones locales funcionan perfectamente para el desarrollo y testing.
 
-**¿Necesitas notificaciones push remotas?** → Crear Development Build
-**¿Las notificaciones locales son suficientes?** → Mantener configuración actual 
+**¿Necesitas notificaciones push remotas?** → Ver `EAS_SETUP_GUIDE.md`
+**¿Las notificaciones locales son suficientes?** → Mantener configuración actual
+
+## 📚 **Documentación Relacionada**
+
+- **`EAS_SETUP_GUIDE.md`** - Guía completa para configurar EAS
+- **`FIRESTORE_SETUP.md`** - Configuración de índices de Firestore
+- **`NOTIFICATION_SETUP.md`** - Documentación de notificaciones 

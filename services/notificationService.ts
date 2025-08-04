@@ -87,7 +87,7 @@ class NotificationService {
       }
 
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      if (!projectId || projectId === 'your-project-id-here') {
+      if (!projectId || projectId === 'your-project-id-here' || projectId === 'bridgea-app-2-dev') {
         console.log('🔔 Modo desarrollo: notificaciones locales activas');
         return null;
       }
