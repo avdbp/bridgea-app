@@ -101,33 +101,12 @@ export default function ConversationScreen() {
             }
           });
 
-          // Enviar notificación si hay mensajes nuevos del otro usuario
-          const newMessagesFromOther = conversationMessages.filter(
-            (msg) => msg.senderId === otherUserId && 
-                     msg.recipientId === user.uid && 
-                     !msg.read &&
-                     msg.createdAt?.toDate?.() > new Date(Date.now() - 10000) // Mensajes de los últimos 10 segundos
-          );
-
-          if (newMessagesFromOther.length > 0) {
-            const latestMessage = newMessagesFromOther[newMessagesFromOther.length - 1];
-            try {
-              await notificationService.sendLocalNotification({
-                title: `💬 Nuevo mensaje de ${otherUserName}`,
-                body: latestMessage.content,
-                data: {
-                  type: 'message_received',
-                  senderId: otherUserId,
-                  senderName: otherUserName,
-                  conversationId: [user.uid, otherUserId].sort().join('_')
-                },
-                sound: true,
-              });
-              console.log('🔔 Notificación enviada para mensaje nuevo');
-            } catch (notificationError) {
-              console.log('Error enviando notificación:', notificationError);
+          // Marcar mensajes como leídos automáticamente cuando se está en la conversación
+          conversationMessages.forEach((msg) => {
+            if (msg.recipientId === user.uid && !msg.read) {
+              updateDoc(doc(db, 'messages', msg.id), { read: true });
             }
-          }
+          });
 
           // Scroll al final después de un breve delay
           setTimeout(() => {

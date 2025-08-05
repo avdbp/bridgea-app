@@ -170,6 +170,16 @@ firebase deploy --only firestore:indexes
   ]
 }
 
+// Consulta: where('recipientId', '==', userId) && where('read', '==', false) && orderBy('createdAt', 'desc') - **NUEVO: Para notificaciones de mensajes**
+{
+  "collectionGroup": "messages",
+  "fields": [
+    { "fieldPath": "recipientId", "order": "ASCENDING" },
+    { "fieldPath": "read", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "DESCENDING" }
+  ]
+}
+
 ## 🚀 **Después de Configurar Índices:**
 
 1. **Reinicia la app** para que las consultas funcionen
