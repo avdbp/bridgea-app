@@ -5,17 +5,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BottomNav from "../components/BottomNav";
@@ -236,14 +236,9 @@ export default function CreateBridgeScreen() {
         setUploadingImage(true);
 
         try {
-          // Probar primero con la función de prueba
-          console.log("🧪 Probando subida alternativa...");
-          let uploadResult = await testCloudinaryUpload(image);
-
-          if (!uploadResult) {
-            console.log("🔄 Probando con función original...");
-            uploadResult = await uploadBridgeImageToCloudinary(image);
-          }
+          // Usar directamente la función específica para bridges
+          console.log("🌉 Subiendo imagen de bridge...");
+          const uploadResult = await uploadBridgeImageToCloudinary(image);
 
           console.log("📤 Resultado de subida:", uploadResult);
 
