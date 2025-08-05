@@ -59,15 +59,9 @@ export const uploadProfileImageToCloudinary = async (uri: string): Promise<strin
     data.append("upload_preset", "bridgea-app");
 
     // Especificar carpeta para perfiles
-    data.append("folder", "perfil");
+    data.append("folder", "profile");
 
-    // Parámetros específicos para imágenes de perfil (más pequeñas)
-    data.append("transformation", "f_auto,q_auto,w_300,h_300,c_fill,g_face"); // 300x300px, recorte centrado en rostro
-    data.append("quality", "85"); // Calidad ligeramente mayor para perfiles
-    data.append("fetch_format", "auto");
-    data.append("flags", "progressive");
-
-    console.log("🚀 Enviando imagen de perfil optimizada a Cloudinary (carpeta: perfil)...");
+    console.log("🚀 Enviando imagen de perfil a Cloudinary (carpeta: profile)...");
 
     const res = await fetch("https://api.cloudinary.com/v1_1/dqqddecpb/image/upload", {
       method: "POST",
@@ -167,12 +161,6 @@ export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string
 
     // Especificar carpeta para bridges
     data.append("folder", "bridges");
-
-    // Parámetros de optimización para bridges
-    data.append("transformation", "f_auto,q_auto,w_800,c_scale");
-    data.append("quality", "80");
-    data.append("fetch_format", "auto");
-    data.append("flags", "progressive");
 
     console.log("🚀 Enviando imagen de bridge a Cloudinary (carpeta: bridges)...");
     console.log("📤 FormData preparado:", data);
