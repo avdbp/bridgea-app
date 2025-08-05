@@ -35,15 +35,7 @@
         }
       ],
       "expo-web-browser",
-      "expo-localization",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/notification-icon.png",
-          "color": "#FF7F00",
-          "sounds": ["./assets/sounds/notification.wav"]
-        }
-      ]
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
