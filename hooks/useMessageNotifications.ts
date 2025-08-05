@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from './useAuth';
 import notificationService from '../services/notificationService';
 
 export const useMessageNotifications = () => {
   const { user } = useAuth();
-  const lastMessageTime = useRef<Date | null>(null);
+  const lastMessageId = useRef<string | null>(null);
   const isActive = useRef(false);
 
   useEffect(() => {
@@ -18,44 +18,49 @@ export const useMessageNotifications = () => {
       if (!isActive.current) return;
 
       try {
-        // Buscar mensajes recientes dirigidos al usuario actual
+        // Consulta ultra-simple: solo por recipientId (sin índices complejos)
         const messagesQuery = query(
           collection(db, 'messages'),
-          where('recipientId', '==', user.uid),
-          where('read', '==', false),
-          orderBy('createdAt', 'desc'),
-          limit(10)
+          where('recipientId', '==', user.uid)
         );
 
         const snapshot = await getDocs(messagesQuery);
-        const newMessages = snapshot.docs
+        
+        // Procesar mensajes en el cliente
+        const unreadMessages = snapshot.docs
           .map(doc => ({
             id: doc.id,
             ...doc.data()
           }))
           .filter(msg => {
+            // Solo mensajes no leídos
+            if (msg.read === true) return false;
+            
             const messageTime = msg.createdAt?.toDate?.();
             if (!messageTime) return false;
             
-            // Solo procesar mensajes de los últimos 30 segundos
-            const isRecent = messageTime > new Date(Date.now() - 30000);
+            // Solo procesar mensajes de los últimos 60 segundos
+            const isRecent = messageTime > new Date(Date.now() - 60000);
             
-            // Solo procesar si es más reciente que el último mensaje procesado
-            const isNewer = !lastMessageTime.current || messageTime > lastMessageTime.current;
+            // Solo procesar si es un mensaje nuevo (no procesado antes)
+            const isNew = !lastMessageId.current || msg.id !== lastMessageId.current;
             
-            return isRecent && isNewer;
+            return isRecent && isNew;
+          })
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toDate?.() || new Date(0);
+            const bTime = b.createdAt?.toDate?.() || new Date(0);
+            return bTime.getTime() - aTime.getTime(); // Orden descendente
           });
 
-        if (newMessages.length > 0) {
-          // Actualizar el tiempo del último mensaje procesado
-          const latestMessage = newMessages[0];
-          const messageTime = latestMessage.createdAt?.toDate?.();
-          if (messageTime) {
-            lastMessageTime.current = messageTime;
-          }
+        if (unreadMessages.length > 0) {
+          // Tomar el mensaje más reciente
+          const latestMsg = unreadMessages[0];
+          
+          // Actualizar el ID del último mensaje procesado
+          lastMessageId.current = latestMsg.id;
 
-          // Enviar notificación para el mensaje más reciente
-          const latestMsg = newMessages[0];
+          // Enviar notificación
           try {
             await notificationService.sendLocalNotification({
               title: `💬 Nuevo mensaje de ${latestMsg.senderName || 'Usuario'}`,
@@ -74,12 +79,17 @@ export const useMessageNotifications = () => {
           }
         }
       } catch (error) {
-        console.error('Error verificando mensajes nuevos:', error);
+        // Silenciar errores de índices para evitar spam en logs
+        if (error.message && error.message.includes('index')) {
+          console.log('⏳ Índices de Firestore en configuración...');
+        } else {
+          console.error('Error verificando mensajes nuevos:', error);
+        }
       }
     };
 
-    // Verificar mensajes nuevos cada 3 segundos
-    const interval = setInterval(checkForNewMessages, 3000);
+    // Verificar mensajes nuevos cada 10 segundos (menos frecuente para reducir errores)
+    const interval = setInterval(checkForNewMessages, 10000);
 
     // Verificación inicial
     checkForNewMessages();
