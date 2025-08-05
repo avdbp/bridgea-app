@@ -257,18 +257,17 @@ export const deleteImageFromCloudinary = async (imageUrl: string): Promise<boole
       return false;
     }
 
-    // Usar autenticación básica con API Key y Secret
-    const credentials = btoa(`${apiKey}:${apiSecret}`);
+    // Usar la API de Cloudinary con parámetros en la URL
+    const deleteUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`;
     
-    const deleteRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+    const deleteData = new FormData();
+    deleteData.append('public_id', publicId);
+    deleteData.append('api_key', apiKey);
+    deleteData.append('api_secret', apiSecret);
+    
+    const deleteRes = await fetch(deleteUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        public_id: publicId
-      }),
+      body: deleteData,
     });
 
     if (deleteRes.ok) {
