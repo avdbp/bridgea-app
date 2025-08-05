@@ -200,6 +200,8 @@ export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string
 const extractPublicIdFromUrl = (url: string): string | null => {
   try {
     // Ejemplo de URL: https://res.cloudinary.com/dqqddecpb/image/upload/v1754420464/profile/iveqesxdzpkxxvf05ghw.jpg
+    // O URL transformada: https://res.cloudinary.com/dqqddecpb/image/upload/f_auto,q_auto,w_300,h_300,c_fill,g_face/v1754420464/profile/iveqesxdzpkxxvf05ghw.jpg
+    
     const urlParts = url.split('/');
     const uploadIndex = urlParts.findIndex(part => part === 'upload');
     
@@ -208,19 +210,30 @@ const extractPublicIdFromUrl = (url: string): string | null => {
       return null;
     }
     
-    // Obtener la parte después de 'upload' y antes de la extensión
-    const versionAndPath = urlParts[uploadIndex + 1];
+    // Buscar la versión (v1234567890) después de 'upload'
+    let versionIndex = uploadIndex + 1;
+    let pathStartIndex = uploadIndex + 2;
+    
+    // Si el siguiente elemento es una versión (empieza con 'v'), saltamos al siguiente
+    if (urlParts[versionIndex] && urlParts[versionIndex].startsWith('v')) {
+      pathStartIndex = uploadIndex + 2;
+    } else {
+      pathStartIndex = uploadIndex + 1;
+    }
+    
+    // Obtener la ruta después de la versión
+    const pathParts = urlParts.slice(pathStartIndex, -1);
     const filename = urlParts[urlParts.length - 1];
     
-    // Si hay versión (v1234567890), la removemos
-    const pathWithoutVersion = versionAndPath.startsWith('v') 
-      ? urlParts.slice(uploadIndex + 2, -1).join('/')
-      : urlParts.slice(uploadIndex + 1, -1).join('/');
-    
     // Remover la extensión del archivo
-    const publicId = filename.includes('.') 
-      ? `${pathWithoutVersion}/${filename.split('.')[0]}`
-      : `${pathWithoutVersion}/${filename}`;
+    const filenameWithoutExt = filename.includes('.') 
+      ? filename.split('.')[0]
+      : filename;
+    
+    // Construir el public_id
+    const publicId = pathParts.length > 0 
+      ? `${pathParts.join('/')}/${filenameWithoutExt}`
+      : filenameWithoutExt;
     
     console.log("🔍 Public ID extraído:", publicId);
     return publicId;
