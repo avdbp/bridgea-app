@@ -372,11 +372,14 @@ export default function CreateBridgeScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
         >
           <View style={styles.header}>
             <Feather name="plus-circle" size={24} color={Colors.primary} />
@@ -395,6 +398,9 @@ export default function CreateBridgeScreen() {
               placeholder="Título de tu bridge"
               placeholderTextColor={Colors.text.light}
               maxLength={100}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              autoCapitalize="words"
             />
           </View>
 
@@ -412,6 +418,10 @@ export default function CreateBridgeScreen() {
               multiline
               numberOfLines={4}
               maxLength={500}
+              returnKeyType="default"
+              blurOnSubmit={true}
+              autoCapitalize="sentences"
+              textAlignVertical="top"
             />
           </View>
 
@@ -531,6 +541,10 @@ export default function CreateBridgeScreen() {
                 onChangeText={handleUserSearch}
                 placeholder="Buscar usuarios por username..."
                 placeholderTextColor={Colors.text.light}
+                returnKeyType="search"
+                blurOnSubmit={true}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
 
               {selectedUsers.length > 0 && (
