@@ -15,7 +15,7 @@ export default function NotificationBell({ onPress }: NotificationBellProps) {
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const { user } = useAuth();
-  const pulseAnim = new Animated.Value(1);
+  const [pulseAnim] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     if (!user) return;
@@ -23,18 +23,30 @@ export default function NotificationBell({ onPress }: NotificationBellProps) {
     // Solución temporal: usar getDocs en lugar de onSnapshot para evitar errores de índices
     const fetchUnreadCount = async () => {
       try {
+        // Contar notificaciones no leídas
         const notificationsQuery = query(
           collection(db, 'notifications'),
           where('recipientId', '==', user.uid),
           where('read', '==', false)
         );
-        const snapshot = await getDocs(notificationsQuery);
-        const count = snapshot.size;
-        setNotificationCount(count);
-        setHasUnreadNotifications(count > 0);
+        const notificationsSnapshot = await getDocs(notificationsQuery);
+        const notificationsCount = notificationsSnapshot.size;
+
+        // Contar mensajes no leídos
+        const messagesQuery = query(
+          collection(db, 'messages'),
+          where('recipientId', '==', user.uid),
+          where('read', '==', false)
+        );
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const messagesCount = messagesSnapshot.size;
+
+        const totalCount = notificationsCount + messagesCount;
+        setNotificationCount(totalCount);
+        setHasUnreadNotifications(totalCount > 0);
 
         // Animar la campana si hay notificaciones nuevas
-        if (count > 0) {
+        if (totalCount > 0) {
           Animated.sequence([
             Animated.timing(pulseAnim, {
               toValue: 1.2,
