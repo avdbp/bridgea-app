@@ -56,7 +56,7 @@ export const uploadProfileImageToCloudinary = async (uri: string): Promise<strin
       type: "image/jpeg",
       name: "profile.jpg",
     } as any);
-    data.append("upload_preset", "bridgea-app");
+    data.append("upload_preset", "bridgea-profiles");
 
     // Especificar carpeta para perfiles
     data.append("folder", "profile");
@@ -157,7 +157,7 @@ export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string
       type: "image/jpeg",
       name: "bridge.jpg",
     } as any);
-    data.append("upload_preset", "bridgea-app");
+    data.append("upload_preset", "bridgea-bridges");
 
     // Especificar carpeta para bridges
     data.append("folder", "bridges");
@@ -246,13 +246,42 @@ export const deleteImageFromCloudinary = async (imageUrl: string): Promise<boole
 
     console.log("🗑️ Eliminando imagen de Cloudinary:", publicId);
 
-    // Para eliminar imágenes necesitamos usar la API de administración
-    // Como estamos usando upload_preset sin firmar, no podemos eliminar directamente
-    // Esta es una limitación de seguridad de Cloudinary
-    console.log("⚠️ No se puede eliminar imagen con upload_preset sin firmar");
-    console.log("💡 Para habilitar eliminación, necesitas configurar la API de administración");
-    
-    return false;
+    // Intentar eliminar usando la API de administración
+    // Nota: Esto requiere configurar las credenciales de API en las variables de entorno
+    const cloudName = 'dqqddecpb';
+    const apiKey = process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
+    const apiSecret = process.env.EXPO_PUBLIC_CLOUDINARY_API_SECRET;
+
+    if (!apiKey || !apiSecret) {
+      console.log("⚠️ Credenciales de API de Cloudinary no configuradas");
+      console.log("💡 Para habilitar eliminación, configura EXPO_PUBLIC_CLOUDINARY_API_KEY y EXPO_PUBLIC_CLOUDINARY_API_SECRET");
+      return false;
+    }
+
+    // Crear timestamp y signature para la autenticación
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const signature = require('crypto').createHash('sha1').update(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`).digest('hex');
+
+    const deleteData = new FormData();
+    deleteData.append('public_id', publicId);
+    deleteData.append('timestamp', timestamp.toString());
+    deleteData.append('api_key', apiKey);
+    deleteData.append('signature', signature);
+
+    const deleteRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+      method: 'POST',
+      body: deleteData,
+    });
+
+    if (deleteRes.ok) {
+      const deleteResult = await deleteRes.json();
+      console.log("✅ Imagen eliminada exitosamente:", deleteResult);
+      return true;
+    } else {
+      const errorText = await deleteRes.text();
+      console.error("❌ Error eliminando imagen:", errorText);
+      return false;
+    }
   } catch (error) {
     console.error("❌ Error eliminando imagen de Cloudinary:", error);
     return false;

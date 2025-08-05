@@ -24,7 +24,7 @@ import NotificationBell from "../components/NotificationBell";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
-import { uploadProfileImageToCloudinary, deleteProfileImageFromCloudinary } from "../services/cloudinaryService";
+import { deleteProfileImageFromCloudinary, uploadProfileImageToCloudinary } from "../services/cloudinaryService";
 import locationService, { LocationData } from "../services/locationService";
 
 export default function ProfileScreen() {
