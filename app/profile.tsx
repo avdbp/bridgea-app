@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
 import BottomNav from "../components/BottomNav";
-import NotificationStatus from "../components/NotificationStatus";
+
 import NotificationBell from "../components/NotificationBell";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
@@ -387,7 +387,7 @@ export default function ProfileScreen() {
 
           <View style={styles.section}>
             <Text style={styles.label}>Notificaciones:</Text>
-            <NotificationStatus userId={auth.currentUser?.uid} />
+    
           </View>
 
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
