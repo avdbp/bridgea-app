@@ -5,16 +5,16 @@ import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import defaultProfile from "../assets/default-profile.png";
@@ -330,7 +330,6 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
-          {/* Componente de estado de notificaciones */}
           <View style={styles.section}>
             <Text style={styles.label}>Ubicación actual:</Text>
             <View style={styles.valueContainer}>
@@ -385,10 +384,7 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>Notificaciones:</Text>
-    
-          </View>
+
 
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Feather name="log-out" size={18} color={Colors.text.white} />
