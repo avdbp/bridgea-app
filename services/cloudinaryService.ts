@@ -304,34 +304,14 @@ export const deleteImageFromCloudinary = async (imageUrl: string): Promise<boole
   }
 };
 
-// Función para eliminar imagen de perfil (con manejo de errores silencioso)
+// Función para eliminar imagen de perfil (deshabilitada)
 export const deleteProfileImageFromCloudinary = async (imageUrl: string): Promise<void> => {
-  try {
-    if (!imageUrl) return;
-    
-    console.log("👤 Eliminando imagen de perfil:", imageUrl);
-    
-    // Para presets unsigned, no podemos eliminar imágenes
-    console.log("ℹ️ Los presets unsigned no permiten eliminación de imágenes");
-    console.log("💡 Para habilitar eliminación, configura presets signed en Cloudinary");
-    
-  } catch (error) {
-    console.log("⚠️ Error eliminando imagen de perfil (continuando...):", error);
-  }
+  // Función deshabilitada - no elimina imágenes de Cloudinary
+  return;
 };
 
-// Función para eliminar imagen de bridge (con manejo de errores silencioso)
+// Función para eliminar imagen de bridge (deshabilitada)
 export const deleteBridgeImageFromCloudinary = async (imageUrl: string): Promise<void> => {
-  try {
-    if (!imageUrl) return;
-    
-    console.log("🌉 Eliminando imagen de bridge:", imageUrl);
-    
-    // Para presets unsigned, no podemos eliminar imágenes
-    console.log("ℹ️ Los presets unsigned no permiten eliminación de imágenes");
-    console.log("💡 Para habilitar eliminación, configura presets signed en Cloudinary");
-    
-  } catch (error) {
-    console.log("⚠️ Error eliminando imagen de bridge (continuando...):", error);
-  }
+  // Función deshabilitada - no elimina imágenes de Cloudinary
+  return;
 };
