@@ -48,18 +48,7 @@ export default function NotificationStatus({ userId }: NotificationStatusProps) 
     }
   };
 
-  const testNotification = async () => {
-    try {
-      await notificationService.sendLocalNotification({
-        title: '🔔 Notificación de prueba',
-        body: '¡Las notificaciones están funcionando correctamente!',
-        sound: true,
-        // No incluir badge para evitar problemas
-      });
-    } catch (error) {
-      console.error('❌ Error enviando notificación de prueba:', error);
-    }
-  };
+
 
   if (hasPermission === null) {
     return (
@@ -94,11 +83,7 @@ export default function NotificationStatus({ userId }: NotificationStatusProps) 
         </Pressable>
       )}
 
-      {hasPermission && (
-        <Pressable style={styles.testButton} onPress={testNotification}>
-          <Text style={styles.testButtonText}>Probar notificación</Text>
-        </Pressable>
-      )}
+
     </View>
   );
 }
@@ -131,19 +116,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    ...TextStyles.body,
-    color: Colors.text.white,
-    fontWeight: '600',
-  },
-  testButton: {
-    backgroundColor: Colors.secondary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  testButtonText: {
     ...TextStyles.body,
     color: Colors.text.white,
     fontWeight: '600',
