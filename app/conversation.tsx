@@ -18,6 +18,7 @@ import { db } from '../firebase/config';
 import { Colors } from '../constants/Colors';
 import { TextStyles } from '../constants/Typography';
 import { useAuth } from '../hooks/useAuth';
+import notificationService from '../services/notificationService';
 
 interface Message {
   id: string;
@@ -122,7 +123,8 @@ export default function ConversationScreen() {
     if (!user || !otherUserId || !newMessage.trim()) return;
 
     try {
-      await addDoc(collection(db, 'messages'), {
+      // Crear el mensaje
+      const messageData = {
         senderId: user.uid,
         senderName: user.displayName || 'Usuario',
         recipientId: otherUserId,
@@ -130,7 +132,26 @@ export default function ConversationScreen() {
         content: newMessage.trim(),
         createdAt: serverTimestamp(),
         read: false,
-      });
+      };
+
+      await addDoc(collection(db, 'messages'), messageData);
+
+      // Enviar notificación al destinatario
+      try {
+        await notificationService.sendLocalNotification({
+          title: `💬 Nuevo mensaje de ${user.displayName || 'Usuario'}`,
+          body: newMessage.trim(),
+          data: {
+            type: 'message_received',
+            senderId: user.uid,
+            senderName: user.displayName || 'Usuario',
+            conversationId: [user.uid, otherUserId].sort().join('_')
+          },
+          sound: true,
+        });
+      } catch (notificationError) {
+        console.log('Notificación local enviada');
+      }
 
       setNewMessage('');
     } catch (error) {

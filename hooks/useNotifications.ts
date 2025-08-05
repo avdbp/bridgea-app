@@ -24,6 +24,16 @@ export const useNotifications = () => {
         if (data?.type === 'bridge_received') {
           // Navegar a la pantalla de bridges
           router.push('/bridges');
+        } else if (data?.type === 'message_received') {
+          // Navegar a la conversación
+          router.push({
+            pathname: '/conversation',
+            params: {
+              otherUserId: data.senderId,
+              otherUserName: data.senderName,
+              otherUserUsername: data.senderName // Usar el nombre como username temporal
+            }
+          });
         }
       });
     };
