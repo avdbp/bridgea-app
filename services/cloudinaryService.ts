@@ -46,7 +46,7 @@ export const uploadImageToCloudinary = async (uri: string): Promise<string | nul
 };
 
 // Función específica para subir imágenes de perfil (más pequeñas)
-export const uploadProfileImageToCloudinary = async (uri: string): Promise<string | null> => {
+export const uploadProfileImageToCloudinary = async (uri: string): Promise<{originalUrl: string, optimizedUrl: string} | null> => {
   try {
     console.log("🔍 Leyendo imagen de perfil desde:", uri);
 
@@ -75,10 +75,13 @@ export const uploadProfileImageToCloudinary = async (uri: string): Promise<strin
       // URL optimizada para perfil
       const optimizedUrl = result.secure_url.replace('/upload/', '/upload/f_auto,q_auto,w_300,h_300,c_fill,g_face/');
       console.log("🔧 URL de perfil optimizada:", optimizedUrl);
-      return optimizedUrl;
+      return {
+        originalUrl: result.secure_url,
+        optimizedUrl: optimizedUrl
+      };
     }
 
-    return result.secure_url;
+    return null;
   } catch (error) {
     console.log("❌ Error al subir imagen de perfil:", error);
     return null;
@@ -140,7 +143,7 @@ export const testCloudinaryUpload = async (uri: string): Promise<string | null> 
 };
 
 // Función específica para subir imágenes de bridges (tamaño medio)
-export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string | null> => {
+export const uploadBridgeImageToCloudinary = async (uri: string): Promise<{originalUrl: string, optimizedUrl: string} | null> => {
   try {
     console.log("🔍 Leyendo imagen de bridge desde:", uri);
     console.log("📁 URI de la imagen:", uri);
@@ -184,11 +187,14 @@ export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string
 
     if (result.secure_url) {
       console.log("🔧 URL de bridge obtenida:", result.secure_url);
-      return result.secure_url;
+      return {
+        originalUrl: result.secure_url,
+        optimizedUrl: result.secure_url
+      };
     }
 
     console.log("⚠️ No se encontró secure_url en la respuesta:", result);
-    return result.secure_url || null;
+    return null;
   } catch (error) {
     console.error("❌ Error al subir imagen de bridge:", error);
     // No mostrar detalles del error en pantalla, solo en consola
@@ -304,13 +310,11 @@ export const deleteProfileImageFromCloudinary = async (imageUrl: string): Promis
     if (!imageUrl) return;
     
     console.log("👤 Eliminando imagen de perfil:", imageUrl);
-    const success = await deleteImageFromCloudinary(imageUrl);
     
-    if (success) {
-      console.log("✅ Imagen de perfil eliminada de Cloudinary");
-    } else {
-      console.log("⚠️ No se pudo eliminar imagen de perfil (esto es normal con upload_preset)");
-    }
+    // Para presets unsigned, no podemos eliminar imágenes
+    console.log("ℹ️ Los presets unsigned no permiten eliminación de imágenes");
+    console.log("💡 Para habilitar eliminación, configura presets signed en Cloudinary");
+    
   } catch (error) {
     console.log("⚠️ Error eliminando imagen de perfil (continuando...):", error);
   }
@@ -322,13 +326,11 @@ export const deleteBridgeImageFromCloudinary = async (imageUrl: string): Promise
     if (!imageUrl) return;
     
     console.log("🌉 Eliminando imagen de bridge:", imageUrl);
-    const success = await deleteImageFromCloudinary(imageUrl);
     
-    if (success) {
-      console.log("✅ Imagen de bridge eliminada de Cloudinary");
-    } else {
-      console.log("⚠️ No se pudo eliminar imagen de bridge (esto es normal con upload_preset)");
-    }
+    // Para presets unsigned, no podemos eliminar imágenes
+    console.log("ℹ️ Los presets unsigned no permiten eliminación de imágenes");
+    console.log("💡 Para habilitar eliminación, configura presets signed en Cloudinary");
+    
   } catch (error) {
     console.log("⚠️ Error eliminando imagen de bridge (continuando...):", error);
   }

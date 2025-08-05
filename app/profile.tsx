@@ -91,28 +91,33 @@ export default function ProfileScreen() {
         // Guardar la URL de la imagen anterior para eliminarla después
         const previousImageUrl = userData?.photoURL;
         
-        const imageUrl = await uploadProfileImageToCloudinary(uri);
+        const uploadResult = await uploadProfileImageToCloudinary(uri);
 
-        if (!imageUrl) {
+        if (!uploadResult) {
           Alert.alert("Error", "No se pudo subir la imagen.");
           return;
         }
 
+        // Usar la URL optimizada para mostrar y la original para eliminar
+        const optimizedImageUrl = uploadResult.optimizedUrl;
+        const originalImageUrl = uploadResult.originalUrl;
+
         // Actualizar en Firebase Auth
         await updateProfile(auth.currentUser!, {
-          photoURL: imageUrl,
+          photoURL: optimizedImageUrl,
         });
 
-        // Actualizar en Firestore
+        // Actualizar en Firestore con ambas URLs
         await updateDoc(doc(db, "users", auth.currentUser!.uid), {
-          photoURL: imageUrl,
+          photoURL: optimizedImageUrl,
+          originalPhotoURL: originalImageUrl, // Guardar URL original para eliminación
         });
 
         // Actualizar estado local
-        setUserData({ ...userData, photoURL: imageUrl });
+        setUserData({ ...userData, photoURL: optimizedImageUrl, originalPhotoURL: originalImageUrl });
         
         // Eliminar la imagen anterior de Cloudinary si existe
-        if (previousImageUrl && previousImageUrl !== imageUrl) {
+        if (previousImageUrl && previousImageUrl !== optimizedImageUrl) {
           await deleteProfileImageFromCloudinary(previousImageUrl);
         }
         

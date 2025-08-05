@@ -246,7 +246,7 @@ export default function CreateBridgeScreen() {
             Alert.alert("Error", "No se pudo subir la imagen. Inténtalo de nuevo.");
             return;
           }
-          imageUrl = uploadResult;
+          imageUrl = uploadResult.optimizedUrl;
           console.log("✅ Imagen subida exitosamente:", imageUrl);
         } catch (uploadError) {
           console.error("❌ Error al subir imagen:", uploadError);
