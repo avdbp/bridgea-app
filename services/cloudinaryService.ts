@@ -247,7 +247,6 @@ export const deleteImageFromCloudinary = async (imageUrl: string): Promise<boole
     console.log("🗑️ Eliminando imagen de Cloudinary:", publicId);
 
     // Intentar eliminar usando la API de administración
-    // Nota: Esto requiere configurar las credenciales de API en las variables de entorno
     const cloudName = 'dqqddecpb';
     const apiKey = process.env.EXPO_PUBLIC_CLOUDINARY_API_KEY;
     const apiSecret = process.env.EXPO_PUBLIC_CLOUDINARY_API_SECRET;
@@ -258,19 +257,18 @@ export const deleteImageFromCloudinary = async (imageUrl: string): Promise<boole
       return false;
     }
 
-    // Crear timestamp y signature para la autenticación
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const signature = require('crypto').createHash('sha1').update(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`).digest('hex');
-
-    const deleteData = new FormData();
-    deleteData.append('public_id', publicId);
-    deleteData.append('timestamp', timestamp.toString());
-    deleteData.append('api_key', apiKey);
-    deleteData.append('signature', signature);
-
+    // Usar autenticación básica con API Key y Secret
+    const credentials = btoa(`${apiKey}:${apiSecret}`);
+    
     const deleteRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
       method: 'POST',
-      body: deleteData,
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        public_id: publicId
+      }),
     });
 
     if (deleteRes.ok) {
