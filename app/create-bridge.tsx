@@ -22,7 +22,7 @@ import BottomNav from "../components/BottomNav";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
-import { testCloudinaryUpload, uploadBridgeImageToCloudinary } from "../services/cloudinaryService";
+import { uploadBridgeImageToCloudinary } from "../services/cloudinaryService";
 import notificationService from "../services/notificationService";
 
 const EMOTIONS = [

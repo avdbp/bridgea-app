@@ -195,3 +195,102 @@ export const uploadBridgeImageToCloudinary = async (uri: string): Promise<string
     return null;
   }
 };
+
+// Función para extraer el public_id de una URL de Cloudinary
+const extractPublicIdFromUrl = (url: string): string | null => {
+  try {
+    // Ejemplo de URL: https://res.cloudinary.com/dqqddecpb/image/upload/v1754420464/profile/iveqesxdzpkxxvf05ghw.jpg
+    const urlParts = url.split('/');
+    const uploadIndex = urlParts.findIndex(part => part === 'upload');
+    
+    if (uploadIndex === -1 || uploadIndex + 2 >= urlParts.length) {
+      console.error("❌ No se pudo extraer public_id de la URL:", url);
+      return null;
+    }
+    
+    // Obtener la parte después de 'upload' y antes de la extensión
+    const versionAndPath = urlParts[uploadIndex + 1];
+    const filename = urlParts[urlParts.length - 1];
+    
+    // Si hay versión (v1234567890), la removemos
+    const pathWithoutVersion = versionAndPath.startsWith('v') 
+      ? urlParts.slice(uploadIndex + 2, -1).join('/')
+      : urlParts.slice(uploadIndex + 1, -1).join('/');
+    
+    // Remover la extensión del archivo
+    const publicId = filename.includes('.') 
+      ? `${pathWithoutVersion}/${filename.split('.')[0]}`
+      : `${pathWithoutVersion}/${filename}`;
+    
+    console.log("🔍 Public ID extraído:", publicId);
+    return publicId;
+  } catch (error) {
+    console.error("❌ Error extrayendo public_id:", error);
+    return null;
+  }
+};
+
+// Función para eliminar imagen de Cloudinary
+export const deleteImageFromCloudinary = async (imageUrl: string): Promise<boolean> => {
+  try {
+    if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
+      console.log("⚠️ URL no válida de Cloudinary:", imageUrl);
+      return false;
+    }
+
+    const publicId = extractPublicIdFromUrl(imageUrl);
+    if (!publicId) {
+      console.error("❌ No se pudo extraer public_id de la URL");
+      return false;
+    }
+
+    console.log("🗑️ Eliminando imagen de Cloudinary:", publicId);
+
+    // Para eliminar imágenes necesitamos usar la API de administración
+    // Como estamos usando upload_preset sin firmar, no podemos eliminar directamente
+    // Esta es una limitación de seguridad de Cloudinary
+    console.log("⚠️ No se puede eliminar imagen con upload_preset sin firmar");
+    console.log("💡 Para habilitar eliminación, necesitas configurar la API de administración");
+    
+    return false;
+  } catch (error) {
+    console.error("❌ Error eliminando imagen de Cloudinary:", error);
+    return false;
+  }
+};
+
+// Función para eliminar imagen de perfil (con manejo de errores silencioso)
+export const deleteProfileImageFromCloudinary = async (imageUrl: string): Promise<void> => {
+  try {
+    if (!imageUrl) return;
+    
+    console.log("👤 Eliminando imagen de perfil:", imageUrl);
+    const success = await deleteImageFromCloudinary(imageUrl);
+    
+    if (success) {
+      console.log("✅ Imagen de perfil eliminada de Cloudinary");
+    } else {
+      console.log("⚠️ No se pudo eliminar imagen de perfil (esto es normal con upload_preset)");
+    }
+  } catch (error) {
+    console.log("⚠️ Error eliminando imagen de perfil (continuando...):", error);
+  }
+};
+
+// Función para eliminar imagen de bridge (con manejo de errores silencioso)
+export const deleteBridgeImageFromCloudinary = async (imageUrl: string): Promise<void> => {
+  try {
+    if (!imageUrl) return;
+    
+    console.log("🌉 Eliminando imagen de bridge:", imageUrl);
+    const success = await deleteImageFromCloudinary(imageUrl);
+    
+    if (success) {
+      console.log("✅ Imagen de bridge eliminada de Cloudinary");
+    } else {
+      console.log("⚠️ No se pudo eliminar imagen de bridge (esto es normal con upload_preset)");
+    }
+  } catch (error) {
+    console.log("⚠️ Error eliminando imagen de bridge (continuando...):", error);
+  }
+};

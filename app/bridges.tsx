@@ -19,6 +19,7 @@ import BottomNav from "../components/BottomNav";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
+import { deleteBridgeImageFromCloudinary } from "../services/cloudinaryService";
 
 interface Bridge {
   id: string;
@@ -120,13 +121,23 @@ export default function BridgesScreen() {
           style: "destructive",
           onPress: async () => {
             try {
+              // Encontrar el bridge para obtener la imagen
+              const bridgeToDelete = myBridges.find(bridge => bridge.id === bridgeId);
+              
               const loadingBridges = myBridges.map(bridge =>
                 bridge.id === bridgeId ? { ...bridge, isDeleting: true } : bridge
               );
               setMyBridges(loadingBridges);
 
+              // Eliminar el bridge de Firestore
               await deleteDoc(doc(db, "bridges", bridgeId));
               console.log("Bridge eliminado exitosamente:", bridgeId);
+              
+              // Eliminar la imagen de Cloudinary si existe
+              if (bridgeToDelete?.imageUrl) {
+                await deleteBridgeImageFromCloudinary(bridgeToDelete.imageUrl);
+              }
+              
               setMyBridges(prevBridges =>
                 prevBridges.filter(bridge => bridge.id !== bridgeId)
               );

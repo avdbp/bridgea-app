@@ -24,7 +24,7 @@ import NotificationBell from "../components/NotificationBell";
 import { Colors } from "../constants/Colors";
 import { TextStyles } from "../constants/Typography";
 import { auth, db } from "../firebase/config";
-import { uploadProfileImageToCloudinary } from "../services/cloudinaryService";
+import { uploadProfileImageToCloudinary, deleteProfileImageFromCloudinary } from "../services/cloudinaryService";
 import locationService, { LocationData } from "../services/locationService";
 
 export default function ProfileScreen() {
@@ -88,6 +88,9 @@ export default function ProfileScreen() {
     if (!pickerResult.canceled && pickerResult.assets.length > 0) {
       const uri = pickerResult.assets[0].uri;
       try {
+        // Guardar la URL de la imagen anterior para eliminarla después
+        const previousImageUrl = userData?.photoURL;
+        
         const imageUrl = await uploadProfileImageToCloudinary(uri);
 
         if (!imageUrl) {
@@ -107,6 +110,12 @@ export default function ProfileScreen() {
 
         // Actualizar estado local
         setUserData({ ...userData, photoURL: imageUrl });
+        
+        // Eliminar la imagen anterior de Cloudinary si existe
+        if (previousImageUrl && previousImageUrl !== imageUrl) {
+          await deleteProfileImageFromCloudinary(previousImageUrl);
+        }
+        
         Alert.alert("Éxito", "Foto de perfil actualizada.");
       } catch (error) {
         console.error("Error updating profile image:", error);
