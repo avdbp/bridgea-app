@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import defaultProfile from "../assets/default-profile.png";
 import BottomNav from "../components/BottomNav";
 
@@ -213,6 +214,12 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleViewAsPublic = () => {
+    if (userData?.username) {
+      router.push(`/user/${userData.username}`);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -230,6 +237,12 @@ export default function ProfileScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        {/* Fondo con gradiente */}
+        <LinearGradient
+          colors={[Colors.primary + '20', Colors.background, Colors.background]}
+          style={styles.backgroundGradient}
+        />
+        
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.pageTitle}>Mi Perfil</Text>
@@ -237,14 +250,17 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.profileSection}>
-            <Image
-              source={
-                userData?.photoURL
-                  ? { uri: userData.photoURL }
-                  : defaultProfile
-              }
-              style={styles.profileImage}
-            />
+            <View style={styles.profileImageContainer}>
+              <Image
+                source={
+                  userData?.photoURL
+                    ? { uri: userData.photoURL }
+                    : defaultProfile
+                }
+                style={styles.profileImage}
+              />
+              <View style={styles.profileImageOverlay} />
+            </View>
             <Pressable style={styles.changePhotoButton} onPress={handlePickImage}>
               <Feather name="camera" size={16} color={Colors.text.white} />
               <Text style={styles.changePhotoText}>Cambiar foto</Text>
@@ -268,7 +284,12 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.valueContainer}>
-                <Text style={styles.value}>{userData?.name || "No especificado"}</Text>
+                <Text style={[
+                  styles.value, 
+                  !userData?.name && styles.emptyValue
+                ]}>
+                  {userData?.name || "No especificado"}
+                </Text>
                 <Pressable style={styles.editButton} onPress={() => setEditingName(true)}>
                   <Feather name="edit-3" size={16} color={Colors.primary} />
                 </Pressable>
@@ -303,7 +324,12 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.valueContainer}>
-                <Text style={styles.value}>{userData?.residenceCity || "No especificada"}</Text>
+                <Text style={[
+                  styles.value, 
+                  !userData?.residenceCity && styles.emptyValue
+                ]}>
+                  {userData?.residenceCity || "No especificada"}
+                </Text>
                 <Pressable style={styles.editButton} onPress={() => setEditingResidenceCity(true)}>
                   <Feather name="edit-3" size={16} color={Colors.primary} />
                 </Pressable>
@@ -329,7 +355,12 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.valueContainer}>
-                <Text style={styles.value}>{userData?.bio || "No especificada"}</Text>
+                <Text style={[
+                  styles.value, 
+                  !userData?.bio && styles.emptyValue
+                ]}>
+                  {userData?.bio || "No especificada"}
+                </Text>
                 <Pressable style={styles.editButton} onPress={() => setEditingBio(true)}>
                   <Feather name="edit-3" size={16} color={Colors.primary} />
                 </Pressable>
@@ -398,10 +429,15 @@ export default function ProfileScreen() {
             )}
           </View>
 
+          {/* Botón Ver como público */}
+          <Pressable style={styles.viewAsPublicButton} onPress={handleViewAsPublic}>
+            <Feather name="eye" size={18} color={Colors.primary} />
+            <Text style={styles.viewAsPublicText}>Ver como público</Text>
+          </Pressable>
 
-
+          {/* Botón Cerrar sesión menos prominente */}
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
-            <Feather name="log-out" size={18} color={Colors.text.white} />
+            <Feather name="log-out" size={16} color={Colors.error} />
             <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
           </Pressable>
         </ScrollView>
@@ -415,6 +451,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   scrollContent: {
     padding: 20,
@@ -446,13 +489,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 16,
     borderWidth: 3,
     borderColor: Colors.primary,
+  },
+  profileImageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 127, 0, 0.1)',
   },
   changePhotoButton: {
     backgroundColor: Colors.secondary,
@@ -487,6 +542,10 @@ const styles = StyleSheet.create({
   value: {
     ...TextStyles.body,
     color: Colors.text.secondary,
+  },
+  emptyValue: {
+    color: '#999999',
+    fontStyle: 'italic',
   },
   valueContainer: {
     flexDirection: "row",
@@ -561,23 +620,35 @@ const styles = StyleSheet.create({
     ...TextStyles.button,
     fontSize: 14,
   },
-  logoutButton: {
-    backgroundColor: Colors.error,
+  viewAsPublicButton: {
+    backgroundColor: Colors.background,
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.primary,
     flexDirection: "row",
     gap: 8,
   },
-  logoutButtonText: {
+  viewAsPublicText: {
     ...TextStyles.button,
     fontSize: 16,
-    fontWeight: "bold",
+    color: Colors.primary,
+  },
+  logoutButton: {
+    backgroundColor: Colors.background,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+    flexDirection: "row",
+    gap: 8,
+    alignSelf: "center",
+  },
+  logoutButtonText: {
+    ...TextStyles.body,
+    fontSize: 14,
+    color: Colors.error,
   },
 });

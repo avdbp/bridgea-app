@@ -1,6 +1,6 @@
 import { router } from "expo-router";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -25,6 +25,9 @@ interface Bridge {
   imageUrl?: string;
   createdAt: any;
   senderId: string;
+  senderName?: string;
+  senderUsername?: string;
+  senderPhotoURL?: string;
 }
 
 export default function HomeScreen() {
@@ -59,15 +62,37 @@ export default function HomeScreen() {
         };
       });
 
+      // Obtener información del autor para cada bridge
+      const bridgesWithAuthor = await Promise.all(
+        bridgesRaw.map(async (bridge) => {
+          try {
+            const userDoc = await getDoc(doc(db, "users", bridge.senderId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              return {
+                ...bridge,
+                senderName: userData.name || "Usuario",
+                senderUsername: userData.username || "usuario",
+                senderPhotoURL: userData.photoURL,
+              };
+            }
+            return bridge;
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            return bridge;
+          }
+        })
+      );
+
       // Ordenamos en el cliente por createdAt
-      bridgesRaw.sort((a, b) => {
+      bridgesWithAuthor.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
         const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
         return dateB.getTime() - dateA.getTime(); // Orden descendente
       });
 
-      setBridges(bridgesRaw);
-      console.log("Bridges públicos cargados:", bridgesRaw.length);
+      setBridges(bridgesWithAuthor);
+      console.log("Bridges públicos cargados:", bridgesWithAuthor.length);
     } catch (error) {
       console.log("Error al cargar bridges:", error);
       setError("Error al cargar los bridges");
@@ -76,20 +101,72 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.replace("/");
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
+  const formatDate = (date: any) => {
+    if (!date) return "Fecha no disponible";
+    
+    const dateObj = date.toDate?.() || new Date(date);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return "Hace unos minutos";
+    if (diffInHours < 24) return `Hace ${diffInHours} hora${diffInHours > 1 ? 's' : ''}`;
+    if (diffInHours < 48) return "Ayer";
+    
+    return dateObj.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const getEmotionIcon = (emotion: string) => {
+    const emotionIcons: { [key: string]: string } = {
+      'alegría': '😊',
+      'tristeza': '😢',
+      'nostalgia': '🥺',
+      'amor': '❤️',
+      'gratitud': '🙏',
+      'esperanza': '✨',
+      'paz': '🕊️',
+      'energía': '⚡',
+      'creatividad': '🎨',
+      'reflexión': '🤔'
+    };
+    return emotionIcons[emotion.toLowerCase()] || '💭';
   };
 
   const renderBridge = (bridge: Bridge) => (
     <View key={bridge.id} style={styles.bridgeCard}>
+      {/* Header con información del autor */}
+      <View style={styles.bridgeHeader}>
+        <View style={styles.authorInfo}>
+          <Image
+            source={
+              bridge.senderPhotoURL
+                ? { uri: bridge.senderPhotoURL }
+                : require("../assets/default-profile.png")
+            }
+            style={styles.authorAvatar}
+          />
+          <View style={styles.authorDetails}>
+            <Text style={styles.authorName}>{bridge.senderName || "Usuario"}</Text>
+            <Text style={styles.authorUsername}>@{bridge.senderUsername || "usuario"}</Text>
+          </View>
+        </View>
+        <Text style={styles.bridgeDate}>{formatDate(bridge.createdAt)}</Text>
+      </View>
+
+      {/* Contenido del bridge */}
       <Text style={styles.bridgeTitle}>{bridge.title}</Text>
-      <Text style={styles.bridgeEmotion}>{bridge.emotion}</Text>
+      
+      {/* Etiqueta emocional */}
+      <View style={styles.emotionTag}>
+        <Text style={styles.emotionIcon}>{getEmotionIcon(bridge.emotion)}</Text>
+        <Text style={styles.bridgeEmotion}>#{bridge.emotion.toLowerCase()}</Text>
+      </View>
+      
       <Text style={styles.bridgeDescription}>{bridge.description}</Text>
+      
       {bridge.imageUrl && (
         <Image
           source={{ uri: bridge.imageUrl }}
@@ -97,9 +174,6 @@ export default function HomeScreen() {
           resizeMode="cover"
         />
       )}
-      <Text style={styles.bridgeDate}>
-        {bridge.createdAt?.toDate?.().toLocaleString() || "Fecha no disponible"}
-      </Text>
     </View>
   );
 
@@ -118,16 +192,16 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Image
-          source={{
-            uri: "https://res.cloudinary.com/dqph2qm49/image/upload/v1753805555/bridgea/logo-beta2_pfl5jp.png",
-          }}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Pressable style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
-        </Pressable>
+        <View style={styles.headerContent}>
+          <Image
+            source={{
+              uri: "https://res.cloudinary.com/dqph2qm49/image/upload/v1753805555/bridgea/logo-beta2_pfl5jp.png",
+            }}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.headerTitle}>Inicio</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -163,25 +237,31 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    backgroundColor: Colors.card,
+    paddingTop: 20,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
-    paddingBottom: 10,
+    justifyContent: "center",
+    gap: 12,
   },
   logo: {
-    width: 120,
+    width: 40,
     height: 40,
   },
-  logoutButton: {
-    backgroundColor: Colors.error,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  logoutText: {
-    ...TextStyles.button,
-    fontSize: 14,
+  headerTitle: {
+    ...TextStyles.largeTitle,
+    color: Colors.text.primary,
+    fontSize: 24,
+    fontWeight: "bold",
   },
   scrollContent: {
     padding: 20,
@@ -261,29 +341,74 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  bridgeTitle: {
-    ...TextStyles.cardTitle,
-    marginBottom: 8,
-  },
-  bridgeEmotion: {
-    fontSize: 18,
-    color: Colors.primary,
-    marginBottom: 8,
-    fontFamily: TextStyles.body.fontFamily,
-  },
-  bridgeDescription: {
-    ...TextStyles.body,
+  bridgeHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
-  bridgeImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 8,
+  authorInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  authorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  authorDetails: {
+    flex: 1,
+  },
+  authorName: {
+    ...TextStyles.cardTitle,
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  authorUsername: {
+    ...TextStyles.secondary,
+    color: Colors.text.light,
+    fontSize: 12,
   },
   bridgeDate: {
     fontSize: 12,
     color: Colors.text.light,
     fontFamily: TextStyles.secondary.fontFamily,
+  },
+  bridgeTitle: {
+    ...TextStyles.cardTitle,
+    marginBottom: 8,
+    fontSize: 18,
+  },
+  emotionTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary + "20",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+    marginBottom: 12,
+  },
+  emotionIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  bridgeEmotion: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontFamily: TextStyles.body.fontFamily,
+    fontWeight: "600",
+  },
+  bridgeDescription: {
+    ...TextStyles.body,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  bridgeImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
   },
 });
