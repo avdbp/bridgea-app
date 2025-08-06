@@ -28,6 +28,7 @@ interface Bridge {
   recipientName?: string;
   recipientUsername?: string;
   recipientPhotoURL?: string;
+  isPublic?: boolean;
 }
 
 type TabType = "sent" | "received";
@@ -49,8 +50,11 @@ export default function MyBridgesScreen() {
 
       const bridgesRef = collection(db, "bridges");
 
-      const sentQuery = query(bridgesRef, where("senderId", "==", user.uid), where("isPublic", "==", false));
-      const receivedQuery = query(bridgesRef, where("recipientId", "==", user.uid), where("isPublic", "==", false));
+      // Bridges enviados: todos los que el usuario ha enviado (públicos y privados)
+      const sentQuery = query(bridgesRef, where("senderId", "==", user.uid));
+
+      // Bridges recibidos: todos los que el usuario ha recibido (públicos y privados)
+      const receivedQuery = query(bridgesRef, where("recipientId", "==", user.uid));
 
       const [sentSnap, receivedSnap] = await Promise.all([
         getDocs(sentQuery),
@@ -70,6 +74,7 @@ export default function MyBridgesScreen() {
             createdAt: data.createdAt,
             senderId: data.senderId || "",
             recipientId: data.recipientId,
+            isPublic: data.isPublic || false,
             ...data
           };
           
@@ -105,6 +110,7 @@ export default function MyBridgesScreen() {
             createdAt: data.createdAt,
             senderId: data.senderId || "",
             recipientId: data.recipientId,
+            isPublic: data.isPublic || false,
             ...data
           };
           
@@ -199,6 +205,30 @@ export default function MyBridgesScreen() {
           </View>
           <Text style={styles.bridgeDate}>{formatDate(bridge.createdAt)}</Text>
         </View>
+      </View>
+
+      {/* Indicador de público/privado */}
+      <View style={styles.visibilityContainer}>
+        <View style={[
+          styles.visibilityBadge, 
+          bridge.isPublic ? styles.publicBadge : styles.privateBadge
+        ]}>
+          <Feather 
+            name={bridge.isPublic ? "globe" : "lock"} 
+            size={12} 
+            color={bridge.isPublic ? Colors.text.white : Colors.text.white} 
+          />
+          <Text style={styles.visibilityText}>
+            {bridge.isPublic ? "Público" : "Privado"}
+          </Text>
+        </View>
+        
+        {/* Mostrar destinatario para bridges privados enviados */}
+        {type === "sent" && !bridge.isPublic && bridge.recipientName && (
+          <Text style={styles.recipientText}>
+            Para: {bridge.recipientName} (@{bridge.recipientUsername})
+          </Text>
+        )}
       </View>
 
       {/* Contenido del bridge */}
@@ -478,5 +508,36 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 180,
     borderRadius: 8,
+  },
+  visibilityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  visibilityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  publicBadge: {
+    backgroundColor: Colors.success,
+  },
+     privateBadge: {
+     backgroundColor: Colors.error,
+   },
+  visibilityText: {
+    fontSize: 12,
+    color: Colors.text.white,
+    fontFamily: TextStyles.body.fontFamily,
+    fontWeight: "600",
+  },
+  recipientText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginLeft: 10,
+    fontFamily: TextStyles.body.fontFamily,
   },
 });
