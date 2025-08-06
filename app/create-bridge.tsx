@@ -364,6 +364,10 @@ export default function CreateBridgeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.pageTitle}>Crear Bridge</Text>
+      </View>
+      
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

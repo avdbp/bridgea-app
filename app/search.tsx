@@ -162,7 +162,6 @@ export default function SearchScreen() {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Feather name="search" size={24} color={Colors.primary} />
             <Text style={styles.title}>Buscar Usuarios</Text>
           </View>
           
@@ -215,14 +214,23 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    backgroundColor: Colors.card,
+    paddingTop: 20,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     marginBottom: 24,
   },
   title: {
     ...TextStyles.largeTitle,
+    textAlign: "center",
     color: Colors.text.primary,
+    fontSize: 24,
+    fontWeight: "bold",
   },
   searchContainer: {
     marginBottom: 24,
