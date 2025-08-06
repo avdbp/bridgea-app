@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import React, { useState, useEffect, useCallback } from "react";
 import {
     ActivityIndicator,
@@ -29,44 +29,50 @@ export default function SearchScreen() {
   // Búsqueda automática con debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchText.trim().length >= 2) {
+      if (searchText.trim().length >= 1) {
         handleSearch();
       } else if (searchText.trim().length === 0) {
         setSearchResults([]);
         setHasSearched(false);
       }
-    }, 500); // Esperar 500ms después de que el usuario deje de escribir
+    }, 300); // Reducido a 300ms para mejor respuesta
 
     return () => clearTimeout(timeoutId);
   }, [searchText]);
 
   const handleSearch = useCallback(async () => {
     const queryText = searchText.trim().toLowerCase();
-    if (!queryText || queryText.length < 2) return;
+    if (!queryText || queryText.length < 1) return;
 
+    console.log("🔍 Buscando usuarios con:", queryText);
     setLoading(true);
     setHasSearched(true);
 
-    const endValue = queryText.replace(/.$/, (c) =>
-      String.fromCharCode(c.charCodeAt(0) + 1)
-    );
-
     try {
-      const q = query(
-        collection(db, "users"),
-        where("username", ">=", queryText),
-        where("username", "<", endValue)
-      );
-
+      // Estrategia simple: Obtener todos los usuarios y filtrar en el cliente
+      const q = query(collection(db, "users"));
       const snapshot = await getDocs(q);
-      const results = snapshot.docs.map((doc) => ({
+      const allUsers = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      setSearchResults(results);
+      console.log("📊 Total de usuarios en BD:", allUsers.length);
+
+      // Filtrar en el cliente
+      const filteredUsers = allUsers.filter((user: any) => {
+        const username = (user.username || "").toLowerCase();
+        const name = (user.name || "").toLowerCase();
+        
+        return username.includes(queryText) || name.includes(queryText);
+      });
+
+      console.log("📊 Usuarios filtrados:", filteredUsers.length);
+      console.log("👥 Usuarios encontrados:", filteredUsers.map((u: any) => u.username));
+
+      setSearchResults(filteredUsers);
     } catch (err) {
-      console.error("Error buscando usuarios:", err);
+      console.error("❌ Error buscando usuarios:", err);
       setSearchResults([]);
     } finally {
       setLoading(false);
@@ -74,6 +80,7 @@ export default function SearchScreen() {
   }, [searchText]);
 
   const handleUserPress = (username: string) => {
+    console.log("👆 Usuario seleccionado:", username);
     router.push(`/user/${username}`);
   };
 
@@ -124,7 +131,7 @@ export default function SearchScreen() {
       );
     }
 
-    if (hasSearched && searchText.trim().length >= 2) {
+    if (hasSearched && searchText.trim().length >= 1) {
       return (
         <View style={styles.noResultsContainer}>
           <Feather name="search" size={64} color={Colors.text.light} />
@@ -141,7 +148,7 @@ export default function SearchScreen() {
         <Feather name="search" size={64} color={Colors.text.light} />
         <Text style={styles.initialStateText}>Busca usuarios por username</Text>
         <Text style={styles.initialStateSubtext}>
-          Escribe al menos 2 caracteres para comenzar la búsqueda
+          Escribe al menos 1 carácter para comenzar la búsqueda
         </Text>
       </View>
     );
@@ -164,7 +171,7 @@ export default function SearchScreen() {
               <Feather name="search" size={20} color={Colors.text.light} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Buscar por username..."
+                placeholder="Buscar por username o nombre..."
                 value={searchText}
                 onChangeText={setSearchText}
                 autoCapitalize="none"
@@ -183,9 +190,9 @@ export default function SearchScreen() {
               )}
             </View>
             
-            {searchText.trim().length >= 2 && (
+            {searchText.trim().length >= 1 && (
               <Text style={styles.searchHint}>
-                Búsqueda automática en {searchText.length >= 2 ? "tiempo real" : "progreso..."}
+                Búsqueda automática en tiempo real
               </Text>
             )}
           </View>
