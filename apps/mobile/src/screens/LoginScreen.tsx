@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +22,7 @@ import { spacing } from '@/constants/spacing';
 export const LoginScreen: React.FC = () => {
   const router = useRouter();
   const { login, isLoggingIn, loginError } = useAuth();
+  const insets = useSafeAreaInsets();
   
   const [formData, setFormData] = useState({
     emailOrUsername: '',
@@ -96,14 +98,14 @@ export const LoginScreen: React.FC = () => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={false}
-          automaticallyAdjustKeyboardInsets={true}
+          style={styles.scrollView}
         >
           {/* Header */}
           <View style={styles.header}>
@@ -189,6 +191,10 @@ const styles = StyleSheet.create({
   },
   
   keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  scrollView: {
     flex: 1,
   },
   
