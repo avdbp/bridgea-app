@@ -1,0 +1,25 @@
+
+  <h1>Listado de Clientes</h1>
+  <div class="drones-list">
+
+  {{#if clients.length}}
+    <ul>
+      {{#each clients}}
+        <li>
+           <a class="nombreLink" href="/clients/details/{{this._id}}">
+            <strong>{{this.name}}</strong>
+          </a>
+          <p>Telefono: {{this.phone}}</p>
+          <p>Email: {{this.email}}</p>
+          {{!-- <p>Contacto: {{this.dataContact}}</p>
+          <p>Ciudad: {{this.city}}</p>
+          <p>Observaciones: {{this.observations}}</p> --}}
+          <!-- Agrega más campos según la estructura de tu modelo de cliente -->
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>No hay clientes disponibles.</p>
+  {{/if}}
+
+</div>

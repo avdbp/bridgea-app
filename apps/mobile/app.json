@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Bridgea",
+    "slug": "bridgea-app",
+    "version": "1.0.0",
+    "sdkVersion": "53.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bridgea.app"
+    },
+    "android": {
+      "package": "com.bridgea.app"
+    },
+    "scheme": "bridgea",
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

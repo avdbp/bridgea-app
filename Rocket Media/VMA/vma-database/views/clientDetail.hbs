@@ -1,0 +1,26 @@
+
+    <h1>Detalles del Cliente</h1>
+<div class="drones-create-container">
+    <div>
+      <div class="form-add">
+        <p><strong>Nombre:</strong> {{client.name}}</p>
+        <p><strong>Teléfono:</strong> {{client.phone}}</p>
+        <p><strong>Email:</strong> {{client.email}}</p>
+        <p><strong>Contacto:</strong> {{client.dataContact}}</p>
+        <p><strong>Ciudad:</strong> {{client.city}}</p>
+        <p><strong>Observaciones:</strong> {{client.observations}}</p>
+    </div>
+</div>
+    <!-- Enlace o formulario para redirigir a la página de edición -->
+    <form action="/clients/edit/{{client._id}}" method="get">
+        <button type="submit">Editar Cliente</button>
+    </form><br/>
+
+ <!-- Botón para eliminar el cliente -->
+  <form action="/clients/delete/{{client._id}}" method="post">
+    <button type="submit">Eliminar Cliente</button>
+  </form>
+
+    <a href="/clients">Volver a la lista de clientes</a>
+
+</div>

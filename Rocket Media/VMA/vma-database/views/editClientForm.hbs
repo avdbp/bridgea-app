@@ -1,0 +1,31 @@
+
+    <h1>Editar Cliente</h1>
+<div class="drones-create-container">
+    <!-- Formulario para editar el cliente -->
+    <form action="/clients/edit/{{client._id}}" method="post">
+    <div class="form-add">
+        <label for="name">Nombre:</label>
+        <input type="text" id="name" name="name" value="{{client.name}}">
+
+        <label for="phone">Teléfono:</label>
+        <input type="text" id="phone" name="phone" value="{{client.phone}}" >
+
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email" value="{{client.email}}">
+
+        <label for="dataContact">Contacto:</label>
+        <input type="text" id="dataContact" name="dataContact" value="{{client.dataContact}}">
+
+        <label for="city">Ciudad:</label>
+        <input type="text" id="city" name="city" value="{{client.city}}">
+
+        <label for="observations">Observaciones:</label>
+        <textarea id="observations" name="observations">{{client.observations}}</textarea><br/>
+
+        <button type="submit">Guardar Cambios</button>
+    </form>
+    </div>
+
+    <a href="/clients/details/{{client._id}}">Cancelar y volver a los detalles del cliente</a>
+
+</div>
