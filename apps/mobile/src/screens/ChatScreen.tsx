@@ -98,7 +98,7 @@ export const ChatScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error sending media:', error);
-      Alert.alert('Error', 'No se pudo enviar el archivo');
+      Alert.alert('Error', 'Could not send file');
     }
   };
 
@@ -113,14 +113,14 @@ export const ChatScreen: React.FC = () => {
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
     if (diffInMinutes < 1) {
-      return 'Ahora';
+      return 'Now';
     } else if (diffInMinutes < 60) {
-      return `hace ${diffInMinutes}m`;
+      return `${diffInMinutes}m ago`;
     } else if (diffInMinutes < 1440) {
       const hours = Math.floor(diffInMinutes / 60);
-      return `hace ${hours}h`;
+      return `${hours}h ago`;
     } else {
-      return date.toLocaleDateString('es-ES', { 
+      return date.toLocaleDateString('en-US', { 
         day: '2-digit', 
         month: '2-digit',
         hour: '2-digit',
@@ -212,7 +212,7 @@ export const ChatScreen: React.FC = () => {
             <Text style={styles.userName}>
               {otherUser.firstName} {otherUser.lastName}
             </Text>
-            <Text style={styles.userStatus}>En línea</Text>
+            <Text style={styles.userStatus}>Online</Text>
           </View>
         </View>
       </View>
@@ -222,9 +222,9 @@ export const ChatScreen: React.FC = () => {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>💬</Text>
-      <Text style={styles.emptyTitle}>Inicia la conversación</Text>
+      <Text style={styles.emptyTitle}>Start the conversation</Text>
       <Text style={styles.emptySubtitle}>
-        Envía un mensaje para comenzar a chatear
+        Send a message to start chatting
       </Text>
     </View>
   );
@@ -243,7 +243,7 @@ export const ChatScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando conversación...</Text>
+          <Text style={styles.loadingText}>Loading conversation...</Text>
         </View>
       </SafeAreaView>
     );
@@ -282,7 +282,7 @@ export const ChatScreen: React.FC = () => {
         
         <TextInput
           style={styles.textInput}
-          placeholder="Escribe un mensaje..."
+          placeholder="Type a message..."
           placeholderTextColor={colors.textSecondary}
           value={messageText}
           onChangeText={handleTyping}
