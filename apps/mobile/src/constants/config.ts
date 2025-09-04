@@ -2,8 +2,8 @@ import Constants from 'expo-constants';
 
 export const config = {
   // API Configuration
-  API_BASE_URL: Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.5.251:3001/api/v1',
-  SOCKET_URL: Constants.expoConfig?.extra?.socketUrl || 'http://192.168.5.251:3003',
+  API_BASE_URL: Constants.expoConfig?.extra?.apiBaseUrl || 'https://bridgea-4aqtwzepa-alejandros-projects-75565a5d.vercel.app/api',
+  SOCKET_URL: Constants.expoConfig?.extra?.socketUrl || 'https://bridgea-4aqtwzepa-alejandros-projects-75565a5d.vercel.app',
   
   // Cloudinary Configuration
   CLOUDINARY_CLOUD_NAME: Constants.expoConfig?.extra?.cloudinaryCloudName || 'dqqddecpb',
