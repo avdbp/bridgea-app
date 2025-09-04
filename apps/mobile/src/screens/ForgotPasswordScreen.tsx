@@ -61,7 +61,12 @@ export const ForgotPasswordScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Recuperar Contraseña</Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
         <View style={styles.formSection}>
           <View style={styles.iconContainer}>
             <Text style={styles.icon}>🔐</Text>

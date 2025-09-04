@@ -98,6 +98,8 @@ export const CreateScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
       >
           {/* Header */}
           <View style={styles.header}>
