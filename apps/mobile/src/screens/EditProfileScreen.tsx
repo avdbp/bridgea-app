@@ -146,7 +146,7 @@ export const EditProfileScreen: React.FC = () => {
       }
 
       // Update local user data using updateProfile
-      updateProfile({
+      await updateProfile({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         username: formData.username.trim(),
