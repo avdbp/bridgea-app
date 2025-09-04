@@ -5,6 +5,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Personal directories (should not be in repo)
+Desktop/
+Rocket Media/
+Rocket Media Current/
+assets/
+
 # Environment variables
 .env
 .env.local
