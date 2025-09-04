@@ -4,6 +4,7 @@ export const typography = {
     xs: 12,
     sm: 14,
     base: 16,
+    md: 16, // Agregado para compatibilidad
     lg: 18,
     xl: 20,
     '2xl': 24,
@@ -26,6 +27,8 @@ export const typography = {
   lineHeight: {
     tight: 1.2,
     normal: 1.4,
+    md: 1.4, // Agregado para compatibilidad
+    sm: 1.2, // Agregado para compatibilidad
     relaxed: 1.6,
     loose: 1.8,
   },

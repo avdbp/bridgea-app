@@ -30,7 +30,7 @@ export const uploadToServer = async (
   }
 
   try {
-    const response = await fetch(`${apiService.baseURL}/upload`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/v1/upload`, {
       method: 'POST',
       body: formData,
       headers: {
@@ -58,7 +58,7 @@ export const uploadToServer = async (
     };
   } catch (error) {
     console.error('Error uploading to server:', error);
-    throw new Error(`Failed to upload media: ${error.message}`);
+    throw new Error(`Failed to upload media: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ImageStyle, StyleProp, ViewStyle } from 'react-native';
+import { Image, ImageStyle, StyleProp, ViewStyle, View } from 'react-native';
 import { config } from '@/constants/config';
 
 interface LogoProps {
@@ -14,17 +14,18 @@ export const Logo: React.FC<LogoProps> = ({
   containerStyle 
 }) => {
   return (
-    <Image
-      source={{ uri: config.APP_LOGO_URL }}
-      style={[
-        {
-          width: size,
-          height: size,
-          resizeMode: 'contain',
-        },
-        style,
-      ]}
-      containerStyle={containerStyle}
-    />
+    <View style={containerStyle}>
+      <Image
+        source={{ uri: config.APP_LOGO_URL }}
+        style={[
+          {
+            width: size,
+            height: size,
+            resizeMode: 'contain',
+          },
+          style,
+        ]}
+      />
+    </View>
   );
 };

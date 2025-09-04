@@ -123,13 +123,6 @@ class ApiService {
     });
   }
 
-  async forgotPassword(email: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
   // User endpoints
   async getUser(username: string): Promise<{ user: User }> {
     return this.request<{ user: User }>(`/users/${username}`);
@@ -205,10 +198,6 @@ class ApiService {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
-  }
-
-  async searchUsers(query: string, page = 1, limit = 20): Promise<PaginatedResponse<User>> {
-    return this.request<PaginatedResponse<User>>(`/users/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
   }
 
   async getFollowers(username: string, page = 1, limit = 20): Promise<{ followers: User[] }> {
@@ -369,10 +358,6 @@ class ApiService {
     return this.request<ApiResponse>(`/bridges/${id}/unlike`, {
       method: 'DELETE',
     });
-  }
-
-  async getUserBridges(username: string): Promise<{ bridges: Bridge[] }> {
-    return this.request<{ bridges: Bridge[] }>(`/users/${username}/bridges`);
   }
 
   // Media endpoints
