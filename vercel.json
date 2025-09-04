@@ -13,5 +13,6 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "buildCommand": "echo 'Skipping build for Vercel API'"
 }
