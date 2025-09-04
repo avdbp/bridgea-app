@@ -62,7 +62,15 @@ export const useAuth = () => {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: Partial<User>) => apiService.updateProfile(data),
+    mutationFn: (data: {
+      firstName: string;
+      lastName: string;
+      username: string;
+      bio?: string;
+      location?: string;
+      website?: string;
+      isPrivate?: boolean;
+    }) => apiService.updateProfile(data),
     onSuccess: (data) => {
       updateUser(data.user);
       queryClient.setQueryData(['user', 'current'], { user: data.user });

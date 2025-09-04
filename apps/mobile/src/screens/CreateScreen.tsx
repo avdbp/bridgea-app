@@ -18,7 +18,7 @@ import { typography } from '@/constants/typography';
 import { spacing } from '@/constants/spacing';
 
 export const CreateScreen: React.FC = () => {
-  const { createBridge, isCreatingBridge } = useBridges();
+  const { createBridgeMutation } = useBridges();
   
   const [formData, setFormData] = useState({
     content: '',
@@ -58,7 +58,7 @@ export const CreateScreen: React.FC = () => {
         .map(tag => tag.trim().toLowerCase())
         .filter(tag => tag.length > 0);
 
-      await createBridge({
+      await createBridgeMutation.mutateAsync({
         content: formData.content.trim(),
         tags: tags.length > 0 ? tags : undefined,
         visibility: formData.visibility,
@@ -208,8 +208,8 @@ export const CreateScreen: React.FC = () => {
             <Button
               title="Publicar Puente"
               onPress={handleCreateBridge}
-              loading={isCreatingBridge}
-              disabled={isCreatingBridge || !formData.content.trim()}
+              loading={createBridgeMutation.isPending}
+              disabled={createBridgeMutation.isPending || !formData.content.trim()}
               fullWidth
               style={styles.createButton}
             />

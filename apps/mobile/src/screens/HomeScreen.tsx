@@ -34,7 +34,7 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  if (isLoading && (!bridges || !bridges.length)) {
+  if (isLoading && (!bridges || bridges.length === 0)) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -61,7 +61,7 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>😞</Text>
           <Text style={styles.errorTitle}>Error al cargar</Text>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{error?.message || 'Error desconocido'}</Text>
         </View>
       </SafeAreaView>
     );

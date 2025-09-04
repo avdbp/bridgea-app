@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { apiService } from '@/services/api';
 import { Message, User } from '@/types';
 
@@ -123,7 +123,7 @@ export const useConversation = (userId: string) => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useQuery({
+  } = useInfiniteQuery({
     queryKey: ['conversation', userId],
     queryFn: ({ pageParam = 1 }) => apiService.getConversation(userId, pageParam),
     getNextPageParam: (lastPage) => {
@@ -132,6 +132,7 @@ export const useConversation = (userId: string) => {
       }
       return undefined;
     },
+    initialPageParam: 1,
   });
 
   // Listen for new messages in real-time

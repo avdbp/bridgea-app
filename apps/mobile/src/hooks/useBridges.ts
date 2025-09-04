@@ -68,7 +68,7 @@ export const useGetUserBridges = (username: string) => {
     queryKey: ['user-bridges', username],
     queryFn: async () => {
       const response = await apiService.getUserBridges(username);
-      return response.bridges;
+      return response.data;
     },
     enabled: !!username,
   });

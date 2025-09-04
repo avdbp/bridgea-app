@@ -77,7 +77,7 @@ export const LoginScreen: React.FC = () => {
       console.error('Login error:', error);
       Alert.alert(
         'Error de inicio de sesión',
-        loginError?.message || error?.message || 'Credenciales incorrectas. Por favor, verifica tu email/username y contraseña.',
+        (loginError as any)?.message || (error as any)?.message || 'Credenciales incorrectas. Por favor, verifica tu email/username y contraseña.',
         [{ text: 'OK' }]
       );
     }

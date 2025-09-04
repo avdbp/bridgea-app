@@ -45,7 +45,7 @@ export const SearchScreen: React.FC = () => {
 
     try {
       const response = await apiService.searchUsers(query, 1, 20);
-      setSearchResults(response.data || []);
+      setSearchResults(response.data.map(user => ({ user })) || []);
     } catch (error) {
       console.error('Search error:', error);
       Alert.alert('Error', 'No se pudo realizar la búsqueda');

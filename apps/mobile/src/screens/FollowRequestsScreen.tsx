@@ -44,7 +44,7 @@ export const FollowRequestsScreen: React.FC = () => {
 
     try {
       const response = await apiService.getFollowRequests(pageNum, 20);
-      const newRequests = response.requests || [];
+      const newRequests = response.data || [];
       
       if (append) {
         setRequests(prev => [...prev, ...newRequests]);

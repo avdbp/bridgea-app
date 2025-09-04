@@ -80,8 +80,6 @@ export const ChatScreen: React.FC = () => {
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: true,
         quality: 0.8,
-        maxWidth: 1920,
-        maxHeight: 1920,
       });
 
       if (!result.canceled && userId) {
@@ -183,7 +181,7 @@ export const ChatScreen: React.FC = () => {
   const renderHeader = () => {
     if (messages.length === 0) return null;
     
-    const otherUser = messages.find(m => m.sender._id !== currentUser?._id)?.sender;
+    const otherUser = messages.find((m: any) => m.sender._id !== currentUser?._id)?.sender;
     if (!otherUser) return null;
 
     return (

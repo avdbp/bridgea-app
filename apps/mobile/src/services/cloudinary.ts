@@ -68,7 +68,7 @@ export const uploadToCloudinary = async (
     };
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);
-    throw new Error(`Failed to upload media to Cloudinary: ${error.message}`);
+    throw new Error(`Failed to upload media to Cloudinary: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

@@ -48,11 +48,17 @@ export const useFollow = (username: string) => {
   // Respond to follow request mutation
   const respondToFollowRequestMutation = useMutation({
     mutationFn: (action: 'accept' | 'reject') => apiService.respondToFollowRequest(username, action),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.status === 'approved') {
+        setIsFollowing(true);
+        setFollowStatus('approved');
+      } else {
+        setIsFollowing(false);
+        setFollowStatus(null);
+      }
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['follow-status', username] });
       queryClient.invalidateQueries({ queryKey: ['follow-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['my-followers'] });
     },
   });
 
@@ -64,44 +70,60 @@ export const useFollow = (username: string) => {
     }
   }, [followStatusData]);
 
-  const follow = () => {
-    return followMutation.mutateAsync();
-  };
-
-  const unfollow = () => {
-    return unfollowMutation.mutateAsync();
-  };
-
-  const acceptFollowRequest = () => {
-    return respondToFollowRequestMutation.mutateAsync('accept');
-  };
-
-  const rejectFollowRequest = () => {
-    return respondToFollowRequestMutation.mutateAsync('reject');
-  };
-
   return {
-    // State
     isFollowing,
     followStatus,
     isLoadingStatus,
-    
-    // Loading states
-    isFollowingUser: followMutation.isPending,
-    isUnfollowingUser: unfollowMutation.isPending,
-    isRespondingToRequest: respondToFollowRequestMutation.isPending,
-    
-    // Errors
     statusError,
-    followError: followMutation.error,
-    unfollowError: unfollowMutation.error,
-    respondError: respondToFollowRequestMutation.error,
-    
-    // Actions
-    follow,
-    unfollow,
-    acceptFollowRequest,
-    rejectFollowRequest,
+    follow: followMutation.mutate,
+    unfollow: unfollowMutation.mutate,
+    respondToFollowRequest: respondToFollowRequestMutation.mutate,
+    isFollowingLoading: followMutation.isPending,
+    isUnfollowingLoading: unfollowMutation.isPending,
+    isRespondingLoading: respondToFollowRequestMutation.isPending,
+  };
+};
+
+export const useFollowRequests = () => {
+  const queryClient = useQueryClient();
+
+  const {
+    data: requestsData,
+    isLoading: isLoadingRequests,
+    error: requestsError,
+    refetch: refetchRequests,
+  } = useQuery({
+    queryKey: ['follow-requests'],
+    queryFn: () => apiService.getFollowRequests(),
+  });
+
+  // Accept follow request mutation
+  const acceptFollowRequestMutation = useMutation({
+    mutationFn: (userId: string) => apiService.respondToFollowRequest(userId, 'accept'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['follow-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['my-followers'] });
+    },
+  });
+
+  // Reject follow request mutation
+  const rejectFollowRequestMutation = useMutation({
+    mutationFn: (userId: string) => apiService.respondToFollowRequest(userId, 'reject'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['follow-requests'] });
+    },
+  });
+
+  return {
+    requests: requestsData?.data || [],
+    pagination: requestsData?.pagination,
+    isLoadingRequests,
+    requestsError,
+    refetchRequests,
+    acceptFollowRequest: acceptFollowRequestMutation.mutate,
+    rejectFollowRequest: rejectFollowRequestMutation.mutate,
+    isAcceptingLoading: acceptFollowRequestMutation.isPending,
+    isRejectingLoading: rejectFollowRequestMutation.isPending,
   };
 };
 
@@ -111,29 +133,17 @@ export const useFollowers = (username: string, page = 1, limit = 20) => {
     isLoading: isLoadingFollowers,
     error: followersError,
     refetch: refetchFollowers,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
   } = useQuery({
     queryKey: ['followers', username, page],
     queryFn: () => apiService.getUserFollowers(username, page, limit),
     enabled: !!username,
   });
 
-  const loadMoreFollowers = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
-
   return {
-    followers: followersData?.followers || [],
+    followers: followersData?.data || [],
     pagination: followersData?.pagination,
     isLoadingFollowers,
     followersError,
-    hasNextPage,
-    isFetchingNextPage,
-    loadMoreFollowers,
     refetchFollowers,
   };
 };
@@ -144,70 +154,18 @@ export const useFollowing = (username: string, page = 1, limit = 20) => {
     isLoading: isLoadingFollowing,
     error: followingError,
     refetch: refetchFollowing,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
   } = useQuery({
     queryKey: ['following', username, page],
     queryFn: () => apiService.getUserFollowing(username, page, limit),
     enabled: !!username,
   });
 
-  const loadMoreFollowing = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
-
   return {
-    following: followingData?.following || [],
+    following: followingData?.data || [],
     pagination: followingData?.pagination,
     isLoadingFollowing,
     followingError,
-    hasNextPage,
-    isFetchingNextPage,
-    loadMoreFollowing,
     refetchFollowing,
-  };
-};
-
-export const useFollowRequests = (page = 1, limit = 20) => {
-  const queryClient = useQueryClient();
-
-  const {
-    data: requestsData,
-    isLoading: isLoadingRequests,
-    error: requestsError,
-    refetch: refetchRequests,
-  } = useQuery({
-    queryKey: ['follow-requests', page],
-    queryFn: () => apiService.getFollowRequests(page, limit),
-  });
-
-  // Respond to follow request mutation
-  const respondToRequestMutation = useMutation({
-    mutationFn: ({ username, action }: { username: string; action: 'accept' | 'reject' }) =>
-      apiService.respondToFollowRequest(username, action),
-    onSuccess: () => {
-      // Invalidate requests list
-      queryClient.invalidateQueries({ queryKey: ['follow-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['my-followers'] });
-    },
-  });
-
-  const respondToRequest = (username: string, action: 'accept' | 'reject') => {
-    return respondToRequestMutation.mutateAsync({ username, action });
-  };
-
-  return {
-    requests: requestsData?.requests || [],
-    pagination: requestsData?.pagination,
-    isLoadingRequests,
-    requestsError,
-    isRespondingToRequest: respondToRequestMutation.isPending,
-    respondError: respondToRequestMutation.error,
-    respondToRequest,
-    refetchRequests,
   };
 };
 
@@ -217,28 +175,16 @@ export const useMyFollowers = (page = 1, limit = 20) => {
     isLoading: isLoadingFollowers,
     error: followersError,
     refetch: refetchFollowers,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
   } = useQuery({
     queryKey: ['my-followers', page],
     queryFn: () => apiService.getMyFollowers(page, limit),
   });
 
-  const loadMoreFollowers = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
-
   return {
-    followers: followersData?.followers || [],
+    followers: followersData?.data || [],
     pagination: followersData?.pagination,
     isLoadingFollowers,
     followersError,
-    hasNextPage,
-    isFetchingNextPage,
-    loadMoreFollowers,
     refetchFollowers,
   };
 };
@@ -249,30 +195,16 @@ export const useMyFollowing = (page = 1, limit = 20) => {
     isLoading: isLoadingFollowing,
     error: followingError,
     refetch: refetchFollowing,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
   } = useQuery({
     queryKey: ['my-following', page],
     queryFn: () => apiService.getMyFollowing(page, limit),
   });
 
-  const loadMoreFollowing = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
-
   return {
-    following: followingData?.following || [],
+    following: followingData?.data || [],
     pagination: followingData?.pagination,
     isLoadingFollowing,
     followingError,
-    hasNextPage,
-    isFetchingNextPage,
-    loadMoreFollowing,
     refetchFollowing,
   };
 };
-
-
