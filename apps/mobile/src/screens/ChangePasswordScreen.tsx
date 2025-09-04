@@ -42,25 +42,25 @@ export const ChangePasswordScreen: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.currentPassword.trim()) {
-      newErrors.currentPassword = 'La contraseña actual es requerida';
+      newErrors.currentPassword = 'Current password is required';
     }
 
     if (!formData.newPassword.trim()) {
-      newErrors.newPassword = 'La nueva contraseña es requerida';
+      newErrors.newPassword = 'New password is required';
     } else if (formData.newPassword.length < 8) {
-      newErrors.newPassword = 'La nueva contraseña debe tener al menos 8 caracteres';
+      newErrors.newPassword = 'New password must be at least 8 characters';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.newPassword)) {
-      newErrors.newPassword = 'La contraseña debe contener al menos una mayúscula, una minúscula y un número';
+      newErrors.newPassword = 'Password must contain at least one uppercase letter, one lowercase letter and one number';
     }
 
     if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Confirma tu nueva contraseña';
+      newErrors.confirmPassword = 'Please confirm your new password';
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (formData.currentPassword === formData.newPassword) {
-      newErrors.newPassword = 'La nueva contraseña debe ser diferente a la actual';
+      newErrors.newPassword = 'New password must be different from current password';
     }
 
     setErrors(newErrors);
@@ -94,8 +94,8 @@ export const ChangePasswordScreen: React.FC = () => {
       });
 
       Alert.alert(
-        'Contraseña actualizada',
-        'Tu contraseña ha sido cambiada exitosamente.',
+        'Password Updated',
+        'Your password has been changed successfully.',
         [
           {
             text: 'OK',
@@ -114,7 +114,7 @@ export const ChangePasswordScreen: React.FC = () => {
       console.error('Error changing password:', error);
       Alert.alert(
         'Error',
-        error?.message || 'No se pudo cambiar la contraseña. Verifica tu contraseña actual.'
+        error?.message || 'Could not change password. Please verify your current password.'
       );
     } finally {
       setIsChanging(false);
@@ -141,10 +141,10 @@ export const ChangePasswordScreen: React.FC = () => {
               style={styles.backButton}
               onPress={() => router.back()}
             >
-              <Text style={styles.backButtonText}>← Volver</Text>
+              <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
             
-            <Text style={styles.headerTitle}>Cambiar Contraseña</Text>
+            <Text style={styles.headerTitle}>Change Password</Text>
             
             <View style={styles.headerSpacer} />
           </View>
@@ -153,16 +153,16 @@ export const ChangePasswordScreen: React.FC = () => {
           <View style={styles.form}>
             <View style={styles.infoSection}>
               <Text style={styles.infoIcon}>🔒</Text>
-              <Text style={styles.infoTitle}>Seguridad de tu cuenta</Text>
+              <Text style={styles.infoTitle}>Account Security</Text>
               <Text style={styles.infoText}>
-                Cambia tu contraseña para mantener tu cuenta segura. 
-                Asegúrate de usar una contraseña fuerte y única.
+                Change your password to keep your account secure. 
+                Make sure to use a strong and unique password.
               </Text>
             </View>
 
             <Input
-              label="Contraseña actual"
-              placeholder="Ingresa tu contraseña actual"
+              label="Current Password"
+              placeholder="Enter your current password"
               value={formData.currentPassword}
               onChangeText={(value) => handleInputChange('currentPassword', value)}
               error={errors.currentPassword}
@@ -181,8 +181,8 @@ export const ChangePasswordScreen: React.FC = () => {
             />
 
             <Input
-              label="Nueva contraseña"
-              placeholder="Ingresa tu nueva contraseña"
+              label="New Password"
+              placeholder="Enter your new password"
               value={formData.newPassword}
               onChangeText={(value) => handleInputChange('newPassword', value)}
               error={errors.newPassword}
@@ -201,8 +201,8 @@ export const ChangePasswordScreen: React.FC = () => {
             />
 
             <Input
-              label="Confirmar nueva contraseña"
-              placeholder="Confirma tu nueva contraseña"
+              label="Confirm New Password"
+              placeholder="Confirm your new password"
               value={formData.confirmPassword}
               onChangeText={(value) => handleInputChange('confirmPassword', value)}
               error={errors.confirmPassword}
@@ -222,14 +222,14 @@ export const ChangePasswordScreen: React.FC = () => {
 
             {/* Password Requirements */}
             <View style={styles.requirementsSection}>
-              <Text style={styles.requirementsTitle}>Requisitos de contraseña:</Text>
+              <Text style={styles.requirementsTitle}>Password requirements:</Text>
               <View style={styles.requirementsList}>
                 <View style={styles.requirementItem}>
                   <Text style={[
                     styles.requirementText,
                     formData.newPassword.length >= 8 && styles.requirementMet
                   ]}>
-                    {formData.newPassword.length >= 8 ? '✅' : '❌'} Al menos 8 caracteres
+                    {formData.newPassword.length >= 8 ? '✅' : '❌'} At least 8 characters
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
@@ -237,7 +237,7 @@ export const ChangePasswordScreen: React.FC = () => {
                     styles.requirementText,
                     /(?=.*[a-z])/.test(formData.newPassword) && styles.requirementMet
                   ]}>
-                    {/(?=.*[a-z])/.test(formData.newPassword) ? '✅' : '❌'} Una letra minúscula
+                    {/(?=.*[a-z])/.test(formData.newPassword) ? '✅' : '❌'} One lowercase letter
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
@@ -245,7 +245,7 @@ export const ChangePasswordScreen: React.FC = () => {
                     styles.requirementText,
                     /(?=.*[A-Z])/.test(formData.newPassword) && styles.requirementMet
                   ]}>
-                    {/(?=.*[A-Z])/.test(formData.newPassword) ? '✅' : '❌'} Una letra mayúscula
+                    {/(?=.*[A-Z])/.test(formData.newPassword) ? '✅' : '❌'} One uppercase letter
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
@@ -253,14 +253,14 @@ export const ChangePasswordScreen: React.FC = () => {
                     styles.requirementText,
                     /(?=.*\d)/.test(formData.newPassword) && styles.requirementMet
                   ]}>
-                    {/(?=.*\d)/.test(formData.newPassword) ? '✅' : '❌'} Un número
+                    {/(?=.*\d)/.test(formData.newPassword) ? '✅' : '❌'} One number
                   </Text>
                 </View>
               </View>
             </View>
 
             <Button
-              title="Cambiar Contraseña"
+              title="Change Password"
               onPress={handleChangePassword}
               loading={isChanging}
               disabled={isChanging || !formData.currentPassword || !formData.newPassword || !formData.confirmPassword}

@@ -65,27 +65,27 @@ export const EditProfileScreen: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'El nombre es requerido';
+      newErrors.firstName = 'First name is required';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'El apellido es requerido';
+      newErrors.lastName = 'Last name is required';
     }
 
     if (!formData.username.trim()) {
-      newErrors.username = 'El nombre de usuario es requerido';
+      newErrors.username = 'Username is required';
     } else if (formData.username.length < 3) {
-      newErrors.username = 'El nombre de usuario debe tener al menos 3 caracteres';
+      newErrors.username = 'Username must be at least 3 characters';
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'El nombre de usuario solo puede contener letras, números y guiones bajos';
+      newErrors.username = 'Username can only contain letters, numbers and underscores';
     }
 
     if (formData.bio && formData.bio.length > 500) {
-      newErrors.bio = 'La biografía no puede exceder 500 caracteres';
+      newErrors.bio = 'Bio cannot exceed 500 characters';
     }
 
     if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      newErrors.website = 'La URL del sitio web debe comenzar con http:// o https://';
+      newErrors.website = 'Website URL must start with http:// or https://';
     }
 
     setErrors(newErrors);
@@ -119,7 +119,7 @@ export const EditProfileScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      Alert.alert('Error', 'Could not select image');
     }
   };
 
@@ -168,15 +168,15 @@ export const EditProfileScreen: React.FC = () => {
       // Show success message after navigation
       setTimeout(() => {
         Alert.alert(
-          'Perfil actualizado',
-          'Tu perfil ha sido actualizado exitosamente.'
+          'Profile Updated',
+          'Your profile has been updated successfully.'
         );
       }, 100);
     } catch (error: any) {
       console.error('Error updating profile:', error);
       Alert.alert(
         'Error',
-        error?.message || 'No se pudo actualizar el perfil. Intenta de nuevo.'
+        error?.message || 'Could not update profile. Please try again.'
       );
     } finally {
       setIsSaving(false);
@@ -218,10 +218,10 @@ export const EditProfileScreen: React.FC = () => {
               style={styles.cancelButton}
               onPress={() => router.back()}
             >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             
-            <Text style={styles.headerTitle}>Editar Perfil</Text>
+            <Text style={styles.headerTitle}>Edit Profile</Text>
             
             <TouchableOpacity
               style={styles.saveButton}
@@ -231,7 +231,7 @@ export const EditProfileScreen: React.FC = () => {
               {isSaving ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={styles.saveButtonText}>Guardar</Text>
+                <Text style={styles.saveButtonText}>Save</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -276,8 +276,8 @@ export const EditProfileScreen: React.FC = () => {
           {/* Form */}
           <View style={styles.form}>
             <Input
-              label="Nombre"
-              placeholder="Tu nombre"
+              label="First Name"
+              placeholder="Your first name"
               value={formData.firstName}
               onChangeText={(value) => handleInputChange('firstName', value)}
               error={errors.firstName}
@@ -285,8 +285,8 @@ export const EditProfileScreen: React.FC = () => {
             />
 
             <Input
-              label="Apellido"
-              placeholder="Tu apellido"
+              label="Last Name"
+              placeholder="Your last name"
               value={formData.lastName}
               onChangeText={(value) => handleInputChange('lastName', value)}
               error={errors.lastName}
@@ -294,8 +294,8 @@ export const EditProfileScreen: React.FC = () => {
             />
 
             <Input
-              label="Nombre de usuario"
-              placeholder="tu_usuario"
+              label="Username"
+              placeholder="your_username"
               value={formData.username}
               onChangeText={(value) => handleInputChange('username', value)}
               error={errors.username}
@@ -304,8 +304,8 @@ export const EditProfileScreen: React.FC = () => {
             />
 
             <Input
-              label="Biografía"
-              placeholder="Cuéntanos sobre ti..."
+              label="Bio"
+              placeholder="Tell us about yourself..."
               value={formData.bio}
               onChangeText={(value) => handleInputChange('bio', value)}
               error={errors.bio}
@@ -315,15 +315,15 @@ export const EditProfileScreen: React.FC = () => {
             />
 
             <Input
-              label="Ubicación"
-              placeholder="Ciudad, País"
+              label="Location"
+              placeholder="City, Country"
               value={formData.location}
               onChangeText={(value) => handleInputChange('location', value)}
             />
 
             <Input
-              label="Sitio web"
-              placeholder="https://tu-sitio.com"
+              label="Website"
+              placeholder="https://your-website.com"
               value={formData.website}
               onChangeText={(value) => handleInputChange('website', value)}
               error={errors.website}
@@ -333,7 +333,7 @@ export const EditProfileScreen: React.FC = () => {
 
             {/* Privacy Settings */}
             <View style={styles.privacySection}>
-              <Text style={styles.privacyLabel}>Privacidad</Text>
+              <Text style={styles.privacyLabel}>Privacy</Text>
               
               <TouchableOpacity
                 style={styles.privacyOption}
@@ -341,9 +341,9 @@ export const EditProfileScreen: React.FC = () => {
               >
                 <View style={styles.privacyOptionContent}>
                   <View>
-                    <Text style={styles.privacyOptionTitle}>Cuenta privada</Text>
+                    <Text style={styles.privacyOptionTitle}>Private account</Text>
                     <Text style={styles.privacyOptionDescription}>
-                      Solo las personas que apruebes podrán ver tus puentes
+                      Only people you approve will be able to see your bridges
                     </Text>
                   </View>
                   <View style={[
@@ -364,7 +364,7 @@ export const EditProfileScreen: React.FC = () => {
               style={styles.changePasswordButton}
               onPress={handleChangePassword}
             >
-              <Text style={styles.changePasswordText}>Cambiar contraseña</Text>
+              <Text style={styles.changePasswordText}>Change password</Text>
               <Text style={styles.changePasswordIcon}>→</Text>
             </TouchableOpacity>
           </View>
