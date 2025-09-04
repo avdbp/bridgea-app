@@ -78,23 +78,23 @@ export const Input: React.FC<InputProps> = ({
         </Text>
       )}
       
-      <TextInput
-        style={[styles.input, inputStyle]}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textSecondary}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry && !showPassword}
-        multiline={multiline}
-        numberOfLines={numberOfLines}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={autoCorrect}
-        editable={editable}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        maxLength={maxLength}
-      />
+              <TextInput
+          style={[styles.input, inputStyle]}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textSecondary}
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={secureTextEntry}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          editable={editable}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          maxLength={maxLength}
+        />
       
       {error && (
         <Text style={[styles.error, errorStyle]}>{error}</Text>
