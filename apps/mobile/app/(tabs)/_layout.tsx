@@ -32,7 +32,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
+          title: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>🏠</Text>
           ),
@@ -41,7 +41,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="create"
         options={{
-          title: 'Crear',
+          title: 'Create',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>➕</Text>
           ),
@@ -50,7 +50,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Mensajes',
+          title: 'Messages',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>💬</Text>
           ),
@@ -59,7 +59,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="groups"
         options={{
-          title: 'Grupos',
+          title: 'Groups',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>👥</Text>
           ),
@@ -68,7 +68,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
+          title: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size }}>👤</Text>
           ),

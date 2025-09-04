@@ -39,12 +39,12 @@ export const HomeScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Bridgea</Text>
-          <Text style={styles.headerSubtitle}>Bienvenido, {user?.firstName}</Text>
+          <Text style={styles.headerSubtitle}>Welcome, {user?.firstName}</Text>
         </View>
         
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando puentes...</Text>
+          <Text style={styles.loadingText}>Loading bridges...</Text>
         </View>
       </SafeAreaView>
     );
@@ -55,13 +55,13 @@ export const HomeScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Bridgea</Text>
-          <Text style={styles.headerSubtitle}>Bienvenido, {user?.firstName}</Text>
+          <Text style={styles.headerSubtitle}>Welcome, {user?.firstName}</Text>
         </View>
         
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>😞</Text>
-          <Text style={styles.errorTitle}>Error al cargar</Text>
-          <Text style={styles.errorText}>{error?.message || 'Error desconocido'}</Text>
+          <Text style={styles.errorTitle}>Loading error</Text>
+          <Text style={styles.errorText}>{error?.message || 'Unknown error'}</Text>
         </View>
       </SafeAreaView>
     );
@@ -71,7 +71,7 @@ export const HomeScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Bridgea</Text>
-        <Text style={styles.headerSubtitle}>Bienvenido, {user?.firstName}</Text>
+        <Text style={styles.headerSubtitle}>Welcome, {user?.firstName}</Text>
       </View>
 
       <ScrollView
@@ -89,9 +89,9 @@ export const HomeScreen: React.FC = () => {
         {!bridges || bridges.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🌉</Text>
-            <Text style={styles.emptyTitle}>No hay puentes aún</Text>
+            <Text style={styles.emptyTitle}>No bridges yet</Text>
             <Text style={styles.emptySubtitle}>
-              Sé el primero en crear un puente y conectar con otros usuarios
+              Be the first to create a bridge and connect with other users
             </Text>
           </View>
         ) : (

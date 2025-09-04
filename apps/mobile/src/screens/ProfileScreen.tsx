@@ -37,12 +37,12 @@ export const ProfileScreen: React.FC = () => {
 
   const handleLogout = () => {
     Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Cerrar sesión', 
+          text: 'Sign Out', 
           style: 'destructive', 
           onPress: () => {
             logout();
@@ -67,43 +67,43 @@ export const ProfileScreen: React.FC = () => {
   const menuItems = [
     {
       icon: '🔍',
-      title: 'Buscar usuarios',
+      title: 'Search users',
       onPress: handleSearch,
     },
     {
       icon: '📥',
-      title: 'Solicitudes de seguimiento',
+      title: 'Follow requests',
       onPress: handleFollowRequests,
     },
     {
       icon: '✏️',
-      title: 'Editar perfil',
+      title: 'Edit profile',
       onPress: handleEditProfile,
     },
     {
       icon: '👥',
-      title: 'Mis seguidores',
+      title: 'My followers',
       onPress: handleFollowers,
     },
     {
       icon: '👤',
-      title: 'Siguiendo',
+      title: 'Following',
       onPress: handleFollowing,
     },
     {
       icon: '⚙️',
-      title: 'Configuración',
+      title: 'Settings',
       onPress: handleSettings,
     },
     {
       icon: '❓',
-      title: 'Ayuda y soporte',
-      onPress: () => Alert.alert('Ayuda', 'Funcionalidad de ayuda próximamente'),
+      title: 'Help and support',
+      onPress: () => Alert.alert('Help', 'Help functionality coming soon'),
     },
     {
       icon: '📄',
-      title: 'Términos y privacidad',
-      onPress: () => Alert.alert('Términos', 'Funcionalidad de términos próximamente'),
+      title: 'Terms and privacy',
+      onPress: () => Alert.alert('Terms', 'Terms functionality coming soon'),
     },
   ];
 
@@ -111,7 +111,7 @@ export const ProfileScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error al cargar el perfil</Text>
+          <Text style={styles.errorText}>Error loading profile</Text>
         </View>
       </SafeAreaView>
     );

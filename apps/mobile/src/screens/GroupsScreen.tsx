@@ -16,22 +16,22 @@ export const GroupsScreen: React.FC = () => {
   const [groups] = useState([
     {
       id: '1',
-      name: 'Desarrolladores React Native',
-      description: 'Comunidad de desarrolladores de React Native',
+      name: 'React Native Developers',
+      description: 'Community of React Native developers',
       memberCount: 245,
       isJoined: true,
     },
     {
       id: '2',
-      name: 'Diseño UX/UI',
-      description: 'Comparte tus diseños y obtén feedback',
+      name: 'UX/UI Design',
+      description: 'Share your designs and get feedback',
       memberCount: 189,
       isJoined: false,
     },
     {
       id: '3',
-      name: 'Emprendedores Tech',
-      description: 'Conecta con otros emprendedores del sector tecnológico',
+      name: 'Tech Entrepreneurs',
+      description: 'Connect with other entrepreneurs in the tech sector',
       memberCount: 156,
       isJoined: true,
     },
@@ -39,35 +39,35 @@ export const GroupsScreen: React.FC = () => {
 
   const handleCreateGroup = () => {
     Alert.alert(
-      'Crear Grupo',
-      'Esta funcionalidad estará disponible próximamente.',
+      'Create Group',
+      'This functionality will be available soon.',
       [{ text: 'OK' }]
     );
   };
 
   const handleJoinGroup = (groupId: string) => {
     Alert.alert(
-      'Unirse al Grupo',
-      'Esta funcionalidad estará disponible próximamente.',
+      'Join Group',
+      'This functionality will be available soon.',
       [{ text: 'OK' }]
     );
   };
 
   const handleLeaveGroup = (groupId: string) => {
     Alert.alert(
-      'Abandonar Grupo',
-      '¿Estás seguro de que quieres abandonar este grupo?',
+      'Leave Group',
+      'Are you sure you want to leave this group?',
       [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Abandonar', style: 'destructive' }
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive' }
       ]
     );
   };
 
   const handleGroupPress = (groupId: string) => {
     Alert.alert(
-      'Ver Grupo',
-      'Esta funcionalidad estará disponible próximamente.',
+      'View Group',
+      'This functionality will be available soon.',
       [{ text: 'OK' }]
     );
   };
@@ -80,18 +80,18 @@ export const GroupsScreen: React.FC = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Grupos</Text>
+          <Text style={styles.headerTitle}>Groups</Text>
           <TouchableOpacity
             style={styles.createButton}
             onPress={handleCreateGroup}
           >
-            <Text style={styles.createButtonText}>Crear</Text>
+            <Text style={styles.createButtonText}>Create</Text>
           </TouchableOpacity>
         </View>
 
         {/* My Groups */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mis Grupos</Text>
+          <Text style={styles.sectionTitle}>My Groups</Text>
           
           {groups.filter(group => group.isJoined).length > 0 ? (
             groups
@@ -106,7 +106,7 @@ export const GroupsScreen: React.FC = () => {
                     <Text style={styles.groupName}>{group.name}</Text>
                     <Text style={styles.groupDescription}>{group.description}</Text>
                     <Text style={styles.groupMembers}>
-                      {group.memberCount} miembros
+                      {group.memberCount} members
                     </Text>
                   </View>
                   <TouchableOpacity
