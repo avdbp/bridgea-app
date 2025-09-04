@@ -2,8 +2,8 @@ import Constants from 'expo-constants';
 
 export const config = {
   // API Configuration
-  API_BASE_URL: Constants.expoConfig?.extra?.apiBaseUrl || 'http://localhost:3001/api/v1',
-  SOCKET_URL: Constants.expoConfig?.extra?.socketUrl || 'http://localhost:3003',
+  API_BASE_URL: Constants.expoConfig?.extra?.apiBaseUrl || 'http://192.168.5.251:3001/api/v1',
+  SOCKET_URL: Constants.expoConfig?.extra?.socketUrl || 'http://192.168.5.251:3003',
   
   // Cloudinary Configuration
   CLOUDINARY_CLOUD_NAME: Constants.expoConfig?.extra?.cloudinaryCloudName || 'dqqddecpb',

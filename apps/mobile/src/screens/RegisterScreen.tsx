@@ -7,8 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
@@ -144,17 +142,12 @@ export const RegisterScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -275,7 +268,6 @@ export const RegisterScreen: React.FC = () => {
             </Text>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -286,13 +278,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing.screenPadding,
+    paddingBottom: spacing.xl,
   },
   
   header: {
