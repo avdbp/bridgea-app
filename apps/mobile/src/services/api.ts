@@ -59,7 +59,7 @@ class ApiService {
     console.log('API Service: Base URL:', this.baseURL);
     
     try {
-      const result = await this.request<AuthResponse>('/auth/login', {
+      const result = await this.request<AuthResponse>('/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
@@ -81,14 +81,14 @@ class ApiService {
     password: string;
     confirmPassword: string;
   }): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/register', {
+    return this.request<AuthResponse>('/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
   async forgotPassword(email: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/forgot-password', {
+    return this.request<ApiResponse>('/v1/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
@@ -99,7 +99,7 @@ class ApiService {
     newPassword: string;
     confirmPassword: string;
   }): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/change-password', {
+    return this.request<ApiResponse>('/v1/auth/change-password', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -107,25 +107,25 @@ class ApiService {
 
   async refreshToken(): Promise<{ tokens: { accessToken: string; refreshToken: string } }> {
     const { tokens } = useAuthStore.getState();
-    return this.request('/auth/refresh', {
+    return this.request('/v1/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken: tokens?.refreshToken }),
     });
   }
 
   async getCurrentUser(): Promise<{ user: User }> {
-    return this.request<{ user: User }>('/auth/me');
+    return this.request<{ user: User }>('/v1/auth/me');
   }
 
   async logout(): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/logout', {
+    return this.request<ApiResponse>('/v1/auth/logout', {
       method: 'POST',
     });
   }
 
   // User endpoints
   async getUser(username: string): Promise<{ user: User }> {
-    return this.request<{ user: User }>(`/users/${username}`);
+    return this.request<{ user: User }>(`/v1/users/${username}`);
   }
 
   async searchUsers(query: string, page: number = 1, limit: number = 20): Promise<PaginatedResponse<User>> {
@@ -134,7 +134,7 @@ class ApiService {
       page: page.toString(),
       limit: limit.toString(),
     });
-    return this.request<PaginatedResponse<User>>(`/users/search?${params}`);
+    return this.request<PaginatedResponse<User>>(`/v1/users/search?${params}`);
   }
 
   async updateProfile(data: {
@@ -148,7 +148,7 @@ class ApiService {
     avatar?: string;
     banner?: string;
   }): Promise<{ user: User }> {
-    return this.request<{ user: User }>('/users/me', {
+    return this.request<{ user: User }>('/v1/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -172,7 +172,7 @@ class ApiService {
       data.avatar = result.url;
     }
     
-    return this.request<{ user: User }>('/users/me/avatar', {
+    return this.request<{ user: User }>('/v1/users/me/avatar', {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -196,26 +196,26 @@ class ApiService {
       data.banner = result.url;
     }
     
-    return this.request<{ user: User }>('/users/me/banner', {
+    return this.request<{ user: User }>('/v1/users/me/banner', {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
   async getFollowers(username: string, page = 1, limit = 20): Promise<{ followers: User[] }> {
-    return this.request<{ followers: User[] }>(`/users/${username}/followers?page=${page}&limit=${limit}`);
+    return this.request<{ followers: User[] }>(`/v1/users/${username}/followers?page=${page}&limit=${limit}`);
   }
 
   async getFollowing(username: string, page = 1, limit = 20): Promise<{ following: User[] }> {
-    return this.request<{ following: User[] }>(`/users/${username}/following?page=${page}&limit=${limit}`);
+    return this.request<{ following: User[] }>(`/v1/users/${username}/following?page=${page}&limit=${limit}`);
   }
 
   async getUserFollowers(username: string, page = 1, limit = 20): Promise<PaginatedResponse<User>> {
-    return this.request<PaginatedResponse<User>>(`/users/${username}/followers?page=${page}&limit=${limit}`);
+    return this.request<PaginatedResponse<User>>(`/v1/users/${username}/followers?page=${page}&limit=${limit}`);
   }
 
   async getUserFollowing(username: string, page = 1, limit = 20): Promise<PaginatedResponse<User>> {
-    return this.request<PaginatedResponse<User>>(`/users/${username}/following?page=${page}&limit=${limit}`);
+    return this.request<PaginatedResponse<User>>(`/v1/users/${username}/following?page=${page}&limit=${limit}`);
   }
 
   // Bridge endpoints
@@ -236,22 +236,22 @@ class ApiService {
     };
     visibility?: 'public' | 'private' | 'followers';
   }): Promise<{ bridge: Bridge }> {
-    return this.request<{ bridge: Bridge }>('/bridges', {
+    return this.request<{ bridge: Bridge }>('/v1/bridges', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getFeed(page = 1, limit = 20): Promise<PaginatedResponse<Bridge>> {
-    return this.request<PaginatedResponse<Bridge>>(`/bridges/feed?page=${page}&limit=${limit}`);
+    return this.request<PaginatedResponse<Bridge>>(`/v1/bridges/feed?page=${page}&limit=${limit}`);
   }
 
   async getUserBridges(username: string, page = 1, limit = 20): Promise<PaginatedResponse<Bridge>> {
-    return this.request<PaginatedResponse<Bridge>>(`/bridges/user/${username}?page=${page}&limit=${limit}`);
+    return this.request<PaginatedResponse<Bridge>>(`/v1/bridges/user/${username}?page=${page}&limit=${limit}`);
   }
 
   async getBridge(id: string): Promise<{ bridge: Bridge }> {
-    return this.request<{ bridge: Bridge }>(`/bridges/${id}`);
+    return this.request<{ bridge: Bridge }>(`/v1/bridges/${id}`);
   }
 
   async updateBridge(id: string, data: {
@@ -259,20 +259,20 @@ class ApiService {
     tags?: string[];
     visibility?: 'public' | 'private' | 'followers';
   }): Promise<{ bridge: Bridge }> {
-    return this.request<{ bridge: Bridge }>(`/bridges/${id}`, {
+    return this.request<{ bridge: Bridge }>(`/v1/bridges/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
   async deleteBridge(id: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/bridges/${id}`, {
+    return this.request<ApiResponse>(`/v1/bridges/${id}`, {
       method: 'DELETE',
     });
   }
 
   async likeBridge(id: string): Promise<{ liked: boolean }> {
-    return this.request<{ liked: boolean }>(`/bridges/${id}/like`, {
+    return this.request<{ liked: boolean }>(`/v1/bridges/${id}/like`, {
       method: 'POST',
     });
   }
@@ -339,13 +339,13 @@ class ApiService {
   }
 
   async markAllNotificationsAsRead(): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/notifications/read-all', {
+    return this.request<ApiResponse>('/v1/notifications/read-all', {
       method: 'PATCH',
     });
   }
 
   async getUnreadNotificationsCount(): Promise<{ unreadCount: number }> {
-    return this.request<{ unreadCount: number }>('/notifications/unread-count');
+    return this.request<{ unreadCount: number }>('/v1/notifications/unread-count');
   }
 
   async deleteNotification(id: string): Promise<ApiResponse> {
@@ -425,7 +425,7 @@ class ApiService {
       publicId: string;
     };
   }): Promise<{ message: Message }> {
-    return this.request<{ message: Message }>('/messages', {
+    return this.request<{ message: Message }>('/v1/messages', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -470,7 +470,7 @@ class ApiService {
   }
 
   async getUnreadMessageCount(): Promise<{ unreadCount: number }> {
-    return this.request<{ unreadCount: number }>('/messages/unread-count');
+    return this.request<{ unreadCount: number }>('/v1/messages/unread-count');
   }
 }
 
