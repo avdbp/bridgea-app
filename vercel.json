@@ -14,5 +14,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "buildCommand": "echo 'Skipping build for Vercel API'"
+  "buildCommand": "echo 'Skipping build for Vercel API'",
+  "outputDirectory": "public"
 }
