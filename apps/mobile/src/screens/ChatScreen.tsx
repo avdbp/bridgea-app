@@ -9,8 +9,6 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
@@ -251,58 +249,53 @@ export const ChatScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {renderHeader()}
       
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
-          onEndReached={loadMoreMessages}
-          onEndReachedThreshold={0.1}
-          inverted={false}
-        />
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.messagesList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
+        onEndReached={loadMoreMessages}
+        onEndReachedThreshold={0.1}
+        inverted={false}
+      />
 
-        <View style={styles.inputContainer}>
-          <TouchableOpacity
-            style={styles.mediaButton}
-            onPress={handleSendMedia}
-          >
-            <Text style={styles.mediaButtonText}>📷</Text>
-          </TouchableOpacity>
-          
-          <TextInput
-            style={styles.textInput}
-            placeholder="Escribe un mensaje..."
-            placeholderTextColor={colors.textSecondary}
-            value={messageText}
-            onChangeText={handleTyping}
-            multiline
-            maxLength={1000}
-          />
-          
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!messageText.trim() || isSendingMessage) && styles.sendButtonDisabled
-            ]}
-            onPress={handleSendMessage}
-            disabled={!messageText.trim() || isSendingMessage}
-          >
-            {isSendingMessage ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Text style={styles.sendButtonText}>→</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+      <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={styles.mediaButton}
+          onPress={handleSendMedia}
+        >
+          <Text style={styles.mediaButtonText}>📷</Text>
+        </TouchableOpacity>
+        
+        <TextInput
+          style={styles.textInput}
+          placeholder="Escribe un mensaje..."
+          placeholderTextColor={colors.textSecondary}
+          value={messageText}
+          onChangeText={handleTyping}
+          multiline
+          maxLength={1000}
+        />
+        
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            (!messageText.trim() || isSendingMessage) && styles.sendButtonDisabled
+          ]}
+          onPress={handleSendMessage}
+          disabled={!messageText.trim() || isSendingMessage}
+        >
+          {isSendingMessage ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Text style={styles.sendButtonText}>→</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -378,9 +371,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   
   messagesList: {
     flexGrow: 1,

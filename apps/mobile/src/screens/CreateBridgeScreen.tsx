@@ -7,8 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Image,
   Dimensions,
 } from 'react-native';
@@ -243,14 +241,10 @@ export const CreateBridgeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Crear Puente</Text>
@@ -372,7 +366,6 @@ export const CreateBridgeScreen: React.FC = () => {
             />
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

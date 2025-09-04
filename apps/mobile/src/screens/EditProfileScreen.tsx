@@ -9,8 +9,6 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -193,14 +191,10 @@ export const EditProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -358,7 +352,6 @@ export const EditProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

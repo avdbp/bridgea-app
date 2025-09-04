@@ -7,8 +7,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -121,14 +119,10 @@ export const ChangePasswordScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -263,7 +257,6 @@ export const ChangePasswordScreen: React.FC = () => {
             />
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

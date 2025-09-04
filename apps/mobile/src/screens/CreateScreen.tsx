@@ -7,8 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -97,14 +95,10 @@ export const CreateScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Crear Puente</Text>
@@ -215,7 +209,6 @@ export const CreateScreen: React.FC = () => {
             />
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
