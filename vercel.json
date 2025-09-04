@@ -12,7 +12,15 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "MONGODB_URI": "@mongodb_uri",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_EXPIRES_IN": "7d",
+    "REFRESH_TOKEN_EXPIRES_IN": "30d",
+    "CLOUDINARY_CLOUD_NAME": "@cloudinary_cloud_name",
+    "CLOUDINARY_API_KEY": "@cloudinary_api_key",
+    "CLOUDINARY_API_SECRET": "@cloudinary_api_secret",
+    "ALLOWED_ORIGINS": "exp://192.168.5.251:8081,http://localhost:3000,https://bridgea-4aqtwzepa-alejandros-projects-75565a5d.vercel.app"
   },
   "buildCommand": "echo 'Skipping build for Vercel API'",
   "outputDirectory": "public"
