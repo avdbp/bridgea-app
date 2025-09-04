@@ -42,7 +42,7 @@ export const WelcomeScreen: React.FC = () => {
             </View>
             <Text style={styles.appName}>Bridgea</Text>
             <Text style={styles.tagline}>
-              Conecta, comparte y construye puentes entre personas
+              Connect, share and build bridges between people
             </Text>
           </View>
 
@@ -50,22 +50,22 @@ export const WelcomeScreen: React.FC = () => {
           <View style={styles.featuresSection}>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>📱</Text>
-              <Text style={styles.featureText}>Comparte momentos</Text>
+              <Text style={styles.featureText}>Share moments</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>👥</Text>
-              <Text style={styles.featureText}>Conecta con amigos</Text>
+              <Text style={styles.featureText}>Connect with friends</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>💬</Text>
-              <Text style={styles.featureText}>Mensajería instantánea</Text>
+              <Text style={styles.featureText}>Instant messaging</Text>
             </View>
           </View>
 
           {/* Buttons Section */}
           <View style={styles.buttonsSection}>
             <Button
-              title="Iniciar Sesión"
+              title="Sign In"
               onPress={handleLogin}
               variant="secondary"
               size="large"
@@ -74,7 +74,7 @@ export const WelcomeScreen: React.FC = () => {
             />
             
             <Button
-              title="Crear Cuenta"
+              title="Create Account"
               onPress={handleRegister}
               variant="primary"
               size="large"

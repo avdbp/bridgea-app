@@ -157,38 +157,38 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Account Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cuenta</Text>
+          <Text style={styles.sectionTitle}>Account</Text>
           
           <SettingItem
             icon="👤"
-            title="Editar Perfil"
-            subtitle="Actualiza tu información personal"
+            title="Edit Profile"
+            subtitle="Update your personal information"
             onPress={handleEditProfile}
           />
           
           <SettingItem
             icon="🔒"
-            title="Cambiar Contraseña"
-            subtitle="Actualiza tu contraseña de seguridad"
+            title="Change Password"
+            subtitle="Update your security password"
             onPress={handleChangePassword}
           />
           
           <SettingItem
             icon="🔐"
-            title="Privacidad"
-            subtitle="Controla quién puede ver tu contenido"
+            title="Privacy"
+            subtitle="Control who can see your content"
             onPress={handlePrivacySettings}
           />
         </View>
 
         {/* App Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Aplicación</Text>
+          <Text style={styles.sectionTitle}>App</Text>
           
           <SettingItem
             icon="🔔"
-            title="Notificaciones"
-            subtitle="Gestiona tus notificaciones"
+            title="Notifications"
+            subtitle="Manage your notifications"
             onPress={handleNotificationSettings}
             rightElement={
               <Switch
@@ -203,8 +203,8 @@ export const SettingsScreen: React.FC = () => {
           
           <SettingItem
             icon="🌙"
-            title="Modo Oscuro"
-            subtitle="Cambia el tema de la aplicación"
+            title="Dark Mode"
+            subtitle="Change the app theme"
             rightElement={<ThemeToggle showLabel={false} size="small" />}
             showArrow={false}
           />
@@ -212,19 +212,19 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Support */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Soporte</Text>
+          <Text style={styles.sectionTitle}>Support</Text>
           
           <SettingItem
             icon="❓"
-            title="Ayuda"
-            subtitle="Obtén ayuda y soporte"
+            title="Help"
+            subtitle="Get help and support"
             onPress={handleHelp}
           />
           
           <SettingItem
             icon="ℹ️"
-            title="Acerca de"
-            subtitle="Información de la aplicación"
+            title="About"
+            subtitle="App information"
             onPress={handleAbout}
           />
         </View>
@@ -233,8 +233,8 @@ export const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <SettingItem
             icon="🚪"
-            title="Cerrar Sesión"
-            subtitle="Salir de tu cuenta"
+            title="Sign Out"
+            subtitle="Sign out of your account"
             onPress={handleLogout}
             showArrow={false}
           />
