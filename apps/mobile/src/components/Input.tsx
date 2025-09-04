@@ -60,25 +60,6 @@ export const Input: React.FC<InputProps> = ({
   required = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const getContainerStyle = (): ViewStyle => {
-    return {
-      ...styles.container,
-      ...(isFocused && styles.focusedContainer),
-      ...(error && styles.errorContainer),
-      ...(editable === false && styles.disabledContainer),
-    };
-  };
-
-  const getInputStyle = (): TextStyle => {
-    return {
-      ...styles.input,
-      ...(multiline && styles.multilineInput),
-      ...(leftIcon && styles.inputWithLeftIcon),
-      ...(rightIcon && styles.inputWithRightIcon),
-    };
-  };
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -88,12 +69,8 @@ export const Input: React.FC<InputProps> = ({
     setIsFocused(false);
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   return (
-    <View style={[getContainerStyle(), style]}>
+    <View style={[styles.container, style]}>
       {label && (
         <Text style={[styles.label, labelStyle]}>
           {label}
@@ -101,56 +78,26 @@ export const Input: React.FC<InputProps> = ({
         </Text>
       )}
       
-      <View style={styles.inputContainer}>
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
-        
-        <TextInput
-          style={[getInputStyle(), inputStyle]}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textSecondary}
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={secureTextEntry && !showPassword}
-          multiline={multiline}
-          numberOfLines={numberOfLines}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
-          editable={editable}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          maxLength={maxLength}
-        />
-        
-        {secureTextEntry && (
-          <TouchableOpacity
-            style={styles.rightIcon}
-            onPress={togglePasswordVisibility}
-          >
-            <Text style={styles.passwordToggle}>
-              {showPassword ? '👁️' : '👁️‍🗨️'}
-            </Text>
-          </TouchableOpacity>
-        )}
-        
-        {rightIcon && !secureTextEntry && (
-          <TouchableOpacity
-            style={styles.rightIcon}
-            onPress={onRightIconPress}
-          >
-            {rightIcon}
-          </TouchableOpacity>
-        )}
-      </View>
+      <TextInput
+        style={[styles.input, inputStyle]}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textSecondary}
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={secureTextEntry && !showPassword}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        editable={editable}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        maxLength={maxLength}
+      />
       
       {error && (
         <Text style={[styles.error, errorStyle]}>{error}</Text>
-      )}
-      
-      {maxLength && (
-        <Text style={styles.characterCount}>
-          {value.length}/{maxLength}
-        </Text>
       )}
     </View>
   );
@@ -159,18 +106,6 @@ export const Input: React.FC<InputProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.md,
-  },
-  
-  focusedContainer: {
-    borderColor: colors.inputFocus,
-  },
-  
-  errorContainer: {
-    borderColor: colors.error,
-  },
-  
-  disabledContainer: {
-    opacity: 0.6,
   },
   
   label: {
@@ -184,60 +119,21 @@ const styles = StyleSheet.create({
     color: colors.error,
   },
   
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  input: {
     backgroundColor: colors.inputBackground,
     borderRadius: spacing.borderRadius.md,
     borderWidth: 1,
     borderColor: colors.inputBorder,
     paddingHorizontal: spacing.inputPadding,
-  },
-  
-  input: {
-    flex: 1,
+    paddingVertical: spacing.inputPadding,
     fontSize: typography.fontSize.base,
     color: colors.text,
-    paddingVertical: spacing.inputPadding,
     minHeight: 44,
-  },
-  
-  multilineInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  
-  inputWithLeftIcon: {
-    marginLeft: spacing.sm,
-  },
-  
-  inputWithRightIcon: {
-    marginRight: spacing.sm,
-  },
-  
-  leftIcon: {
-    marginRight: spacing.sm,
-  },
-  
-  rightIcon: {
-    marginLeft: spacing.sm,
-    padding: spacing.xs,
-  },
-  
-  passwordToggle: {
-    fontSize: 16,
   },
   
   error: {
     fontSize: typography.fontSize.sm,
     color: colors.error,
-    marginTop: spacing.xs,
-  },
-  
-  characterCount: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    textAlign: 'right',
     marginTop: spacing.xs,
   },
 });
