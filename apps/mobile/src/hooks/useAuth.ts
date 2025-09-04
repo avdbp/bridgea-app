@@ -70,6 +70,8 @@ export const useAuth = () => {
       location?: string;
       website?: string;
       isPrivate?: boolean;
+      avatar?: string;
+      banner?: string;
     }) => apiService.updateProfile(data),
     onSuccess: (data) => {
       updateUser(data.user);

@@ -145,6 +145,8 @@ class ApiService {
     location?: string;
     website?: string;
     isPrivate?: boolean;
+    avatar?: string;
+    banner?: string;
   }): Promise<{ user: User }> {
     return this.request<{ user: User }>('/users/me', {
       method: 'PATCH',
