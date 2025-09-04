@@ -44,13 +44,13 @@ export const CreateBridgeScreen: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.content.trim()) {
-      newErrors.content = 'El contenido es requerido';
+      newErrors.content = 'Content is required';
     } else if (formData.content.trim().length > 2000) {
-      newErrors.content = 'El contenido no puede exceder 2000 caracteres';
+      newErrors.content = 'Content cannot exceed 2000 characters';
     }
 
     if (media.length > 10) {
-      newErrors.media = 'Máximo 10 archivos de media';
+      newErrors.media = 'Maximum 10 media files';
     }
 
     setErrors(newErrors);
@@ -87,7 +87,7 @@ export const CreateBridgeScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'No se pudo seleccionar la imagen');
+      Alert.alert('Error', 'Could not select image');
     }
   };
 
@@ -113,7 +113,7 @@ export const CreateBridgeScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'No se pudo tomar la foto');
+      Alert.alert('Error', 'Could not take photo');
     }
   };
 
@@ -123,7 +123,7 @@ export const CreateBridgeScreen: React.FC = () => {
 
   const handleAddLocation = () => {
     // TODO: Implement location picker
-    Alert.alert('Ubicación', 'Funcionalidad de ubicación próximamente');
+    Alert.alert('Location', 'Location functionality coming soon');
   };
 
   const handleCreateBridge = async () => {
@@ -201,15 +201,15 @@ export const CreateBridgeScreen: React.FC = () => {
       setLocation(null);
 
       Alert.alert(
-        '¡Puente creado!',
-        'Tu puente ha sido publicado exitosamente.',
+        'Bridge Created!',
+        'Your bridge has been published successfully.',
         [{ text: 'OK' }]
       );
     } catch (error) {
       console.error('Error creating bridge:', error);
       Alert.alert(
         'Error',
-        'No se pudo crear el puente. Intenta de nuevo.',
+        'Could not create bridge. Please try again.',
         [{ text: 'OK' }]
       );
     }
@@ -259,17 +259,17 @@ export const CreateBridgeScreen: React.FC = () => {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Crear Puente</Text>
+            <Text style={styles.title}>Create Bridge</Text>
             <Text style={styles.subtitle}>
-              Comparte algo con tu comunidad
+              Share something with your community
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
             <Input
-              label="¿Qué estás pensando?"
-              placeholder="Comparte tus pensamientos, experiencias o momentos especiales..."
+              label="What are you thinking?"
+              placeholder="Share your thoughts, experiences or special moments..."
               value={formData.content}
               onChangeText={(value) => handleInputChange('content', value)}
               error={errors.content}
@@ -280,8 +280,8 @@ export const CreateBridgeScreen: React.FC = () => {
             />
 
             <Input
-              label="Etiquetas (opcional)"
-              placeholder="viaje, fotografía, música (separadas por comas)"
+              label="Tags (optional)"
+              placeholder="travel, photography, music (separated by commas)"
               value={formData.tags}
               onChangeText={(value) => handleInputChange('tags', value)}
               autoCapitalize="none"
@@ -297,7 +297,7 @@ export const CreateBridgeScreen: React.FC = () => {
                 onPress={handlePickImage}
               >
                 <Text style={styles.mediaIcon}>📷</Text>
-                <Text style={styles.mediaText}>Galería</Text>
+                <Text style={styles.mediaText}>Gallery</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -305,7 +305,7 @@ export const CreateBridgeScreen: React.FC = () => {
                 onPress={handleTakePhoto}
               >
                 <Text style={styles.mediaIcon}>📸</Text>
-                <Text style={styles.mediaText}>Cámara</Text>
+                <Text style={styles.mediaText}>Camera</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -313,13 +313,13 @@ export const CreateBridgeScreen: React.FC = () => {
                 onPress={handleAddLocation}
               >
                 <Text style={styles.mediaIcon}>📍</Text>
-                <Text style={styles.mediaText}>Ubicación</Text>
+                <Text style={styles.mediaText}>Location</Text>
               </TouchableOpacity>
             </View>
 
             {/* Visibility Options */}
             <View style={styles.visibilitySection}>
-              <Text style={styles.visibilityLabel}>Visibilidad</Text>
+              <Text style={styles.visibilityLabel}>Visibility</Text>
               <View style={styles.visibilityOptions}>
                 <TouchableOpacity
                   style={[
@@ -332,7 +332,7 @@ export const CreateBridgeScreen: React.FC = () => {
                     styles.visibilityText,
                     formData.visibility === 'public' && styles.visibilityTextActive,
                   ]}>
-                    🌍 Público
+                    🌍 Public
                   </Text>
                 </TouchableOpacity>
 
@@ -347,7 +347,7 @@ export const CreateBridgeScreen: React.FC = () => {
                     styles.visibilityText,
                     formData.visibility === 'followers' && styles.visibilityTextActive,
                   ]}>
-                    👥 Seguidores
+                    👥 Followers
                   </Text>
                 </TouchableOpacity>
 
@@ -362,14 +362,14 @@ export const CreateBridgeScreen: React.FC = () => {
                     styles.visibilityText,
                     formData.visibility === 'private' && styles.visibilityTextActive,
                   ]}>
-                    🔒 Privado
+                    🔒 Private
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <Button
-              title="Publicar Puente"
+              title="Publish Bridge"
               onPress={handleCreateBridge}
               loading={isCreatingBridge}
               disabled={isCreatingBridge || !formData.content.trim()}
