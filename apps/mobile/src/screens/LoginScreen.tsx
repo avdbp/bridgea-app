@@ -35,13 +35,13 @@ export const LoginScreen: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.emailOrUsername.trim()) {
-      newErrors.emailOrUsername = 'Email o nombre de usuario es requerido';
+      newErrors.emailOrUsername = 'Email or username is required';
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = 'La contraseña es requerida';
+      newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -78,8 +78,8 @@ export const LoginScreen: React.FC = () => {
     } catch (error) {
       console.error('Login error:', error);
       Alert.alert(
-        'Error de inicio de sesión',
-        (loginError as any)?.message || (error as any)?.message || 'Credenciales incorrectas. Por favor, verifica tu email/username y contraseña.',
+        'Sign In Error',
+        (loginError as any)?.message || (error as any)?.message || 'Invalid credentials. Please check your email/username and password.',
         [{ text: 'OK' }]
       );
     }
@@ -120,17 +120,17 @@ export const LoginScreen: React.FC = () => {
               <Text style={styles.logoText}>🌉</Text>
             </View>
             
-            <Text style={styles.title}>Bienvenido de vuelta</Text>
+            <Text style={styles.title}>Welcome back</Text>
             <Text style={styles.subtitle}>
-              Inicia sesión para continuar en Bridgea
+              Sign in to continue on Bridgea
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
             <Input
-              label="Email o Nombre de usuario"
-              placeholder="Ingresa tu email o username"
+              label="Email or Username"
+              placeholder="Enter your email or username"
               value={formData.emailOrUsername}
               onChangeText={(value) => handleInputChange('emailOrUsername', value)}
               error={errors.emailOrUsername}
@@ -141,8 +141,8 @@ export const LoginScreen: React.FC = () => {
             />
 
             <Input
-              label="Contraseña"
-              placeholder="Ingresa tu contraseña"
+              label="Password"
+              placeholder="Enter your password"
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
               error={errors.password}
@@ -155,12 +155,12 @@ export const LoginScreen: React.FC = () => {
               onPress={handleForgotPassword}
             >
               <Text style={styles.forgotPasswordText}>
-                ¿Olvidaste tu contraseña?
+                Forgot your password?
               </Text>
             </TouchableOpacity>
 
             <Button
-              title="Iniciar Sesión"
+              title="Sign In"
               onPress={handleLogin}
               loading={isLoggingIn}
               disabled={isLoggingIn}
@@ -172,9 +172,9 @@ export const LoginScreen: React.FC = () => {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              ¿No tienes una cuenta?{' '}
+              Don't have an account?{' '}
               <TouchableOpacity onPress={handleGoToRegister}>
-                <Text style={styles.linkText}>Regístrate aquí</Text>
+                <Text style={styles.linkText}>Sign up here</Text>
               </TouchableOpacity>
             </Text>
           </View>

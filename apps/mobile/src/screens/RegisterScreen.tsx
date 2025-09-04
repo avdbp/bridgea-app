@@ -41,53 +41,53 @@ export const RegisterScreen: React.FC = () => {
 
     // First name validation
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'El nombre es requerido';
+      newErrors.firstName = 'First name is required';
     } else if (formData.firstName.trim().length < 2) {
-      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+      newErrors.firstName = 'First name must be at least 2 characters';
     }
 
     // Last name validation
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'El apellido es requerido';
+      newErrors.lastName = 'Last name is required';
     } else if (formData.lastName.trim().length < 2) {
-      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+      newErrors.lastName = 'Last name must be at least 2 characters';
     }
 
     // Email validation
     if (!formData.email.trim()) {
-      newErrors.email = 'El email es requerido';
+      newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Ingresa un email válido';
+      newErrors.email = 'Please enter a valid email';
     }
 
     // Username validation
     if (!formData.username.trim()) {
-      newErrors.username = 'El nombre de usuario es requerido';
+      newErrors.username = 'Username is required';
     } else if (formData.username.trim().length < 3) {
-      newErrors.username = 'El username debe tener al menos 3 caracteres';
+      newErrors.username = 'Username must be at least 3 characters';
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'El username solo puede contener letras, números y guiones bajos';
+      newErrors.username = 'Username can only contain letters, numbers and underscores';
     }
 
     // Location validation
     if (!formData.location.trim()) {
-      newErrors.location = 'La ubicación es requerida';
+      newErrors.location = 'Location is required';
     } else if (formData.location.trim().length < 2) {
-      newErrors.location = 'La ubicación debe tener al menos 2 caracteres';
+      newErrors.location = 'Location must be at least 2 characters';
     }
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'La contraseña es requerida';
+      newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     // Confirm password validation
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirma tu contraseña';
+      newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     setErrors(newErrors);
@@ -118,8 +118,8 @@ export const RegisterScreen: React.FC = () => {
       });
       
       Alert.alert(
-        '¡Registro exitoso!',
-        'Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.',
+        'Registration Successful!',
+        'Your account has been created successfully. You can now sign in.',
         [
           {
             text: 'OK',
@@ -133,8 +133,8 @@ export const RegisterScreen: React.FC = () => {
       );
     } catch (error) {
       Alert.alert(
-        'Error de registro',
-        registerError?.message || 'Hubo un error al crear tu cuenta. Por favor, intenta de nuevo.',
+        'Registration Error',
+        registerError?.message || 'There was an error creating your account. Please try again.',
         [{ text: 'OK' }]
       );
     }
@@ -171,9 +171,9 @@ export const RegisterScreen: React.FC = () => {
               <Text style={styles.logoText}>🌉</Text>
             </View>
             
-            <Text style={styles.title}>Crear cuenta</Text>
+            <Text style={styles.title}>Create account</Text>
             <Text style={styles.subtitle}>
-              Únete a Bridgea y comienza a conectar
+              Join Bridgea and start connecting
             </Text>
           </View>
 
@@ -182,8 +182,8 @@ export const RegisterScreen: React.FC = () => {
             <View style={styles.nameRow}>
               <View style={styles.nameInput}>
                 <Input
-                  label="Nombre"
-                  placeholder="Tu nombre"
+                  label="First Name"
+                  placeholder="Your first name"
                   value={formData.firstName}
                   onChangeText={(value) => handleInputChange('firstName', value)}
                   error={errors.firstName}
@@ -194,8 +194,8 @@ export const RegisterScreen: React.FC = () => {
               
               <View style={styles.nameInput}>
                 <Input
-                  label="Apellido"
-                  placeholder="Tu apellido"
+                  label="Last Name"
+                  placeholder="Your last name"
                   value={formData.lastName}
                   onChangeText={(value) => handleInputChange('lastName', value)}
                   error={errors.lastName}
@@ -207,7 +207,7 @@ export const RegisterScreen: React.FC = () => {
 
             <Input
               label="Email"
-              placeholder="tu@email.com"
+              placeholder="your@email.com"
               value={formData.email}
               onChangeText={(value) => handleInputChange('email', value)}
               error={errors.email}
@@ -218,8 +218,8 @@ export const RegisterScreen: React.FC = () => {
             />
 
             <Input
-              label="Nombre de usuario"
-              placeholder="tu_username"
+              label="Username"
+              placeholder="your_username"
               value={formData.username}
               onChangeText={(value) => handleInputChange('username', value)}
               error={errors.username}
@@ -229,8 +229,8 @@ export const RegisterScreen: React.FC = () => {
             />
 
             <Input
-              label="Ubicación"
-              placeholder="Ciudad, País"
+              label="Location"
+              placeholder="City, Country"
               value={formData.location}
               onChangeText={(value) => handleInputChange('location', value)}
               error={errors.location}
@@ -239,8 +239,8 @@ export const RegisterScreen: React.FC = () => {
             />
 
             <Input
-              label="Contraseña"
-              placeholder="Mínimo 6 caracteres"
+              label="Password"
+              placeholder="Minimum 6 characters"
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
               error={errors.password}
@@ -249,8 +249,8 @@ export const RegisterScreen: React.FC = () => {
             />
 
             <Input
-              label="Confirmar contraseña"
-              placeholder="Repite tu contraseña"
+              label="Confirm Password"
+              placeholder="Repeat your password"
               value={formData.confirmPassword}
               onChangeText={(value) => handleInputChange('confirmPassword', value)}
               error={errors.confirmPassword}
@@ -259,7 +259,7 @@ export const RegisterScreen: React.FC = () => {
             />
 
             <Button
-              title="Crear cuenta"
+              title="Create Account"
               onPress={handleRegister}
               loading={isRegistering}
               disabled={isRegistering}
@@ -271,9 +271,9 @@ export const RegisterScreen: React.FC = () => {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              ¿Ya tienes una cuenta?{' '}
+              Already have an account?{' '}
               <TouchableOpacity onPress={handleGoToLogin}>
-                <Text style={styles.linkText}>Inicia sesión aquí</Text>
+                <Text style={styles.linkText}>Sign in here</Text>
               </TouchableOpacity>
             </Text>
           </View>
