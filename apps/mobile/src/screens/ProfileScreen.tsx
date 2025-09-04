@@ -151,7 +151,21 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.bio}>{user.bio}</Text>
           )}
           
-          <Text style={styles.location}>📍 {user.location}</Text>
+          {user.location && (
+            <Text style={styles.location}>📍 {user.location}</Text>
+          )}
+          
+          {user.website && (
+            <TouchableOpacity 
+              style={styles.website}
+              onPress={() => {
+                // TODO: Open website in browser
+                Alert.alert('Sitio web', user.website);
+              }}
+            >
+              <Text style={styles.websiteText}>🌐 {user.website}</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Stats */}
           <View style={styles.statsContainer}>
@@ -288,7 +302,17 @@ const styles = StyleSheet.create({
   location: {
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  
+  website: {
     marginBottom: spacing.lg,
+  },
+  
+  websiteText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
   
   statsContainer: {

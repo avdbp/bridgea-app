@@ -8,6 +8,8 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { apiService } from '@/services/api';
@@ -119,10 +121,17 @@ export const ChangePasswordScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -257,6 +266,7 @@ export const ChangePasswordScreen: React.FC = () => {
             />
           </View>
         </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
