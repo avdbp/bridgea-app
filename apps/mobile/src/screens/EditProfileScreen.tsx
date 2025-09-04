@@ -158,11 +158,16 @@ export const EditProfileScreen: React.FC = () => {
         banner: banner || undefined,
       });
 
-      Alert.alert(
-        'Perfil actualizado',
-        'Tu perfil ha sido actualizado exitosamente.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      // Navigate back to profile immediately
+      router.replace('/(tabs)/profile');
+      
+      // Show success message after navigation
+      setTimeout(() => {
+        Alert.alert(
+          'Perfil actualizado',
+          'Tu perfil ha sido actualizado exitosamente.'
+        );
+      }, 100);
     } catch (error: any) {
       console.error('Error updating profile:', error);
       Alert.alert(
