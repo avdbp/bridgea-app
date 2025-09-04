@@ -120,7 +120,21 @@ export const login = async (req: VercelRequest, res: VercelResponse) => {
       $or: [{ email: emailOrUsername }, { username: emailOrUsername }]
     });
 
+    console.log('Login: User found:', user ? 'Yes' : 'No');
+    if (user) {
+      console.log('Login: User password field exists:', !!user.password);
+      console.log('Login: User password type:', typeof user.password);
+    }
+
     if (!user) {
+      return res.status(401).json({
+        error: 'Authentication Failed',
+        message: 'Invalid credentials'
+      });
+    }
+
+    if (!user.password) {
+      console.log('Login: User has no password field');
       return res.status(401).json({
         error: 'Authentication Failed',
         message: 'Invalid credentials'
