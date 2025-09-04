@@ -9,9 +9,12 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { apiService } from '@/services/api';
 import { Button } from '@/components/Button';
@@ -24,6 +27,7 @@ import { User } from '@/types';
 export const EditProfileScreen: React.FC = () => {
   const router = useRouter();
   const { user, updateProfile } = useAuth();
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -196,12 +200,18 @@ export const EditProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        bounces={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          style={styles.scrollView}
+        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -359,6 +369,7 @@ export const EditProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -367,6 +378,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  scrollView: {
+    flex: 1,
   },
   
   scrollContent: {

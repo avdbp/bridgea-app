@@ -8,8 +8,11 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '@/services/api';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -19,6 +22,7 @@ import { spacing } from '@/constants/spacing';
 
 export const ChangePasswordScreen: React.FC = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [isChanging, setIsChanging] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -119,12 +123,18 @@ export const ChangePasswordScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        bounces={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          style={styles.scrollView}
+        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity
@@ -259,6 +269,7 @@ export const ChangePasswordScreen: React.FC = () => {
             />
           </View>
         </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -267,6 +278,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  scrollView: {
+    flex: 1,
   },
   
   scrollContent: {

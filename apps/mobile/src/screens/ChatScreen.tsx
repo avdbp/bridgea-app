@@ -11,8 +11,11 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useConversation } from '@/hooks/useMessages';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +30,7 @@ export const ChatScreen: React.FC = () => {
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
+  const insets = useSafeAreaInsets();
   const [messageText, setMessageText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -247,21 +251,26 @@ export const ChatScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {renderHeader()}
-      
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.messagesList}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
-        onEndReached={loadMoreMessages}
-        onEndReachedThreshold={0.1}
-        inverted={false}
-      />
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+      >
+        {renderHeader()}
+        
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.messagesList}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          onEndReached={loadMoreMessages}
+          onEndReachedThreshold={0.1}
+          inverted={false}
+        />
 
       <View style={styles.inputContainer}>
         <TouchableOpacity
@@ -296,6 +305,7 @@ export const ChatScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -304,6 +314,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  
+  keyboardAvoidingView: {
+    flex: 1,
   },
   
   header: {

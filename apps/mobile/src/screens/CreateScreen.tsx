@@ -7,7 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useBridges } from '@/hooks/useBridges';
@@ -17,6 +20,7 @@ import { spacing } from '@/constants/spacing';
 
 export const CreateScreen: React.FC = () => {
   const { createBridgeMutation } = useBridges();
+  const insets = useSafeAreaInsets();
   
   const [formData, setFormData] = useState({
     content: '',
@@ -95,12 +99,18 @@ export const CreateScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        bounces={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          style={styles.scrollView}
+        >
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Crear Puente</Text>
@@ -211,6 +221,7 @@ export const CreateScreen: React.FC = () => {
             />
           </View>
         </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -222,6 +233,10 @@ const styles = StyleSheet.create({
   },
   
   keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  scrollView: {
     flex: 1,
   },
   
