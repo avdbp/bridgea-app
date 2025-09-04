@@ -27,12 +27,12 @@ export const ForgotPasswordScreen: React.FC = () => {
 
   const handleSendResetLink = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'El correo electrónico es obligatorio');
+      Alert.alert('Error', 'Email address is required');
       return;
     }
 
     if (!email.includes('@')) {
-      Alert.alert('Error', 'Por favor ingresa un correo electrónico válido');
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
@@ -40,14 +40,14 @@ export const ForgotPasswordScreen: React.FC = () => {
     try {
       await apiService.forgotPassword(email.trim());
       Alert.alert(
-        'Enlace Enviado',
-        'Se ha enviado un enlace de recuperación a tu correo electrónico. Revisa tu bandeja de entrada.',
+        'Link Sent',
+        'A recovery link has been sent to your email address. Please check your inbox.',
         [
           { text: 'OK', onPress: () => router.back() }
         ]
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo enviar el enlace de recuperación');
+      Alert.alert('Error', error.message || 'Could not send recovery link');
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export const ForgotPasswordScreen: React.FC = () => {
           >
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Recuperar Contraseña</Text>
+          <Text style={styles.headerTitle}>Reset Password</Text>
         </View>
 
         <ScrollView 
@@ -81,18 +81,18 @@ export const ForgotPasswordScreen: React.FC = () => {
             <Text style={styles.icon}>🔐</Text>
           </View>
 
-          <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
+          <Text style={styles.title}>Forgot your password?</Text>
           <Text style={styles.subtitle}>
-            No te preocupes, te enviaremos un enlace para restablecer tu contraseña a tu correo electrónico.
+            Don't worry, we'll send you a link to reset your password to your email address.
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Correo Electrónico</Text>
+            <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="tu@email.com"
+              placeholder="your@email.com"
               placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -108,16 +108,16 @@ export const ForgotPasswordScreen: React.FC = () => {
             {loading ? (
               <ActivityIndicator size="small" color={colors.background} />
             ) : (
-              <Text style={styles.sendButtonText}>Enviar Enlace</Text>
+              <Text style={styles.sendButtonText}>Send Link</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.helpSection}>
             <Text style={styles.helpText}>
-              ¿Recordaste tu contraseña?
+              Remember your password?
             </Text>
             <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.loginLink}>Iniciar Sesión</Text>
+              <Text style={styles.loginLink}>Sign In</Text>
             </TouchableOpacity>
           </View>
         </View>
