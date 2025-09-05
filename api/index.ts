@@ -1216,6 +1216,48 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return;
     }
 
+    // Debug endpoint to update user data (temporary)
+    if (url === '/api/debug/update-user' && method === 'POST') {
+      try {
+        const { username, location, lastName } = req.body;
+        if (!username) {
+          return res.status(400).json({ error: 'Username required' });
+        }
+
+        const user = await User.findOne({ username });
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (location) user.location = location;
+        if (lastName) user.lastName = lastName;
+
+        await user.save();
+
+        res.status(200).json({
+          message: 'User updated successfully',
+          user: {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            email: user.email,
+            location: user.location,
+            bio: user.bio,
+            website: user.website,
+            avatar: user.avatar,
+            banner: user.banner,
+            isPrivate: user.isPrivate,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Database error', message: error.message });
+      }
+      return;
+    }
+
     // Health check
     if (url === '/api/health' || url === '/api/health/') {
       res.status(200).json({
