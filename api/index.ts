@@ -223,6 +223,14 @@ const login = async (req: VercelRequest, res: VercelResponse) => {
     if (user) {
       console.log('Login: User password field exists:', !!user.password);
       console.log('Login: User password type:', typeof user.password);
+      console.log('Login: User data:', {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        location: user.location
+      });
     }
 
     if (!user) {
