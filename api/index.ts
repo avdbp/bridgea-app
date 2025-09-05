@@ -1259,6 +1259,57 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return;
     }
 
+    // Debug endpoint to create correct user data
+    if (url === '/api/debug/create-correct-user' && method === 'POST') {
+      try {
+        // Delete existing user
+        await User.deleteOne({ username: 'avdb' });
+        
+        // Create correct user with your real data
+        const correctUser = new User({
+          firstName: 'Alejandro',
+          lastName: 'Van Den Bussche',
+          email: 'alejandro.vdb@gmail.com',
+          username: 'avdb',
+          password: '$2a$12$FsLdwEQQWAcqTfkokFsr/eCY2iuEDkYsB8iOE1Y1HvQpsuLMA2BV2', // Same password hash
+          location: 'Orlando Florida',
+          bio: 'Me siento feliz la app nace de nuevo yeiii',
+          website: '',
+          avatar: '',
+          banner: '',
+          isPrivate: false,
+          isVerified: false,
+          pushTokens: [],
+          followersCount: 0,
+          followingCount: 0,
+          bridgesCount: 0
+        });
+
+        await correctUser.save();
+
+        res.status(200).json({
+          message: 'Correct user created successfully',
+          user: {
+            _id: correctUser._id,
+            firstName: correctUser.firstName,
+            lastName: correctUser.lastName,
+            username: correctUser.username,
+            email: correctUser.email,
+            location: correctUser.location,
+            bio: correctUser.bio,
+            website: correctUser.website,
+            avatar: correctUser.avatar,
+            banner: correctUser.banner,
+            isPrivate: correctUser.isPrivate,
+            createdAt: correctUser.createdAt
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Database error', message: error.message });
+      }
+      return;
+    }
+
     // Debug endpoint to update user data (temporary)
     if (url === '/api/debug/update-user' && method === 'POST') {
       try {
