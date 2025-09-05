@@ -1214,12 +1214,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     }
 
     // User routes
-    if (url === '/api/v1/users/me' && method === 'GET') {
-      return authenticateToken(req, res, () => getCurrentUserProfile(req, res));
-    }
-    
     if (url?.startsWith('/api/v1/users/search') && method === 'GET') {
       return await searchUsers(req, res);
+    }
+    
+    if (url === '/api/v1/users/me' && method === 'GET') {
+      return authenticateToken(req, res, () => getCurrentUserProfile(req, res));
     }
     
     if (url?.startsWith('/api/v1/users/') && method === 'GET') {
