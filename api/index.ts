@@ -1178,18 +1178,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   const { url, method } = req;
   
   try {
-    // Health check
-    if (url === '/api/health' || url === '/api/health/') {
-      res.status(200).json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        message: 'Bridgea API is running on Vercel',
-        database: dbConnected ? 'Connected' : 'Disconnected'
-      });
-      return;
-    }
-
-    // Debug endpoint to check user data
+    // Debug endpoint to check user data (must be first)
     if (url === '/api/debug/user' && method === 'GET') {
       try {
         const { username } = req.query;
@@ -1224,6 +1213,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       } catch (error) {
         res.status(500).json({ error: 'Database error', message: error.message });
       }
+      return;
+    }
+
+    // Health check
+    if (url === '/api/health' || url === '/api/health/') {
+      res.status(200).json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        message: 'Bridgea API is running on Vercel',
+        database: dbConnected ? 'Connected' : 'Disconnected'
+      });
       return;
     }
 
