@@ -1216,6 +1216,29 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return;
     }
 
+    // Debug endpoint to list all users
+    if (url === '/api/debug/users' && method === 'GET') {
+      try {
+        const users = await User.find({}).select('_id firstName lastName username email location bio createdAt');
+        res.status(200).json({
+          totalUsers: users.length,
+          users: users.map(user => ({
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            email: user.email,
+            location: user.location,
+            bio: user.bio,
+            createdAt: user.createdAt
+          }))
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Database error', message: error.message });
+      }
+      return;
+    }
+
     // Debug endpoint to update user data (temporary)
     if (url === '/api/debug/update-user' && method === 'POST') {
       try {
