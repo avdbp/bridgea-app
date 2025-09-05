@@ -280,7 +280,58 @@ const login = async (req: VercelRequest, res: VercelResponse) => {
   }
 };
 
-// Get user profile
+// Get current user profile
+const getCurrentUserProfile = async (req: VercelRequest, res: VercelResponse) => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication Required',
+        message: 'User not authenticated'
+      });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        error: 'User Not Found',
+        message: 'User not found'
+      });
+    }
+
+    const followersCount = await Follow.countDocuments({ following: user._id, status: 'accepted' });
+    const followingCount = await Follow.countDocuments({ follower: user._id, status: 'accepted' });
+
+    res.status(200).json({
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        username: user.username,
+        location: user.location,
+        bio: user.bio,
+        website: user.website,
+        avatar: user.avatar,
+        banner: user.banner,
+        isPrivate: user.isPrivate,
+        followersCount,
+        followingCount,
+        createdAt: user.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Get current user profile error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Could not get current user profile'
+    });
+  }
+};
+
+// Get user profile by username
 const getUserProfile = async (req: VercelRequest, res: VercelResponse) => {
   try {
     const { username } = req.query;
@@ -1163,6 +1214,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     }
 
     // User routes
+    if (url === '/api/v1/users/me' && method === 'GET') {
+      return authenticateToken(req, res, () => getCurrentUserProfile(req, res));
+    }
+    
     if (url?.startsWith('/api/v1/users/search') && method === 'GET') {
       return await searchUsers(req, res);
     }
