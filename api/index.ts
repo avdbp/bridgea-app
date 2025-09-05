@@ -1189,6 +1189,44 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return;
     }
 
+    // Debug endpoint to check user data
+    if (url === '/api/debug/user' && method === 'GET') {
+      try {
+        const { username } = req.query;
+        if (!username) {
+          return res.status(400).json({ error: 'Username required' });
+        }
+
+        const user = await User.findOne({ username });
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json({
+          rawUserData: {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            email: user.email,
+            location: user.location,
+            bio: user.bio,
+            website: user.website,
+            avatar: user.avatar,
+            banner: user.banner,
+            isPrivate: user.isPrivate,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+          },
+          database: 'MongoDB Atlas',
+          collection: 'users'
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Database error', message: error.message });
+      }
+      return;
+    }
+
     // Root API
     if (url === '/api' || url === '/api/') {
       res.status(200).json({
