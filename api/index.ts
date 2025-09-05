@@ -1216,6 +1216,26 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return;
     }
 
+    // Debug endpoint to check database connection
+    if (url === '/api/debug/db-info' && method === 'GET') {
+      try {
+        const dbName = mongoose.connection.db?.databaseName;
+        const collections = await mongoose.connection.db?.listCollections().toArray();
+        const userCount = await User.countDocuments();
+        
+        res.status(200).json({
+          databaseName: dbName,
+          collections: collections?.map(c => c.name) || [],
+          userCount,
+          connectionState: mongoose.connection.readyState,
+          mongoUri: MONGODB_URI.substring(0, 50) + '...' // Show first 50 chars for security
+        });
+      } catch (error) {
+        res.status(500).json({ error: 'Database error', message: error.message });
+      }
+      return;
+    }
+
     // Debug endpoint to list all users
     if (url === '/api/debug/users' && method === 'GET') {
       try {
