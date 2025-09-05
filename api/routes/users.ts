@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { User } from '../../apps/api/src/models/User';
-import { Follow } from '../../apps/api/src/models/Follow';
+import { User } from '../models/User';
+import { Follow } from '../models/Follow';
 
 // Get user profile
 export const getUserProfile = async (req: VercelRequest, res: VercelResponse) => {

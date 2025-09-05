@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { User } from '../../apps/api/src/models/User';
+import { User } from '../models/User';
 import { config } from '../../apps/api/src/config';
 
 // Register user

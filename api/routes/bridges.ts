@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Bridge } from '../../apps/api/src/models/Bridge';
-import { User } from '../../apps/api/src/models/User';
-import { Follow } from '../../apps/api/src/models/Follow';
+import { Bridge } from '../models/Bridge';
+import { User } from '../models/User';
+import { Follow } from '../models/Follow';
 
 // Create bridge
 export const createBridge = async (req: VercelRequest, res: VercelResponse) => {

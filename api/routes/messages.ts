@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Message } from '../../apps/api/src/models/Message';
-import { User } from '../../apps/api/src/models/User';
+import { Message } from '../models/Message';
+import { User } from '../models/User';
 
 // Send message
 export const sendMessage = async (req: VercelRequest, res: VercelResponse) => {

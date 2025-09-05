@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Notification } from '../../apps/api/src/models/Notification';
+import { Notification } from '../models/Notification';
 
 // Get notifications
 export const getNotifications = async (req: VercelRequest, res: VercelResponse) => {
