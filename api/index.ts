@@ -23,7 +23,27 @@ const UserSchema = new mongoose.Schema({
   isPrivate: { type: Boolean, default: false }
 }, { timestamps: true });
 
+// Bridge Schema
+const BridgeSchema = new mongoose.Schema({
+  content: { type: String, required: true, maxlength: 2000 },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  visibility: { type: String, enum: ['public', 'private', 'followers'], default: 'public' },
+  tags: [{ type: String, trim: true }],
+  media: [{
+    url: String,
+    type: { type: String, enum: ['image', 'video', 'audio'] },
+    publicId: String
+  }],
+  location: {
+    name: String,
+    coordinates: { lat: Number, lng: Number }
+  },
+  likesCount: { type: Number, default: 0 },
+  commentsCount: { type: Number, default: 0 }
+}, { timestamps: true });
+
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
+const Bridge = mongoose.models.Bridge || mongoose.model('Bridge', BridgeSchema);
 
 // Initialize database connection
 let dbConnected = false;
@@ -227,6 +247,121 @@ const login = async (req: VercelRequest, res: VercelResponse) => {
   }
 };
 
+// Get bridges feed
+const getBridges = async (req: VercelRequest, res: VercelResponse) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    const bridges = await Bridge.find({ visibility: 'public' })
+      .populate('author', 'firstName lastName username avatar')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await Bridge.countDocuments({ visibility: 'public' });
+
+    res.status(200).json({
+      data: bridges.map(bridge => ({
+        id: bridge._id,
+        content: bridge.content,
+        visibility: bridge.visibility,
+        tags: bridge.tags,
+        media: bridge.media,
+        location: bridge.location,
+        author: {
+          id: bridge.author._id,
+          firstName: bridge.author.firstName,
+          lastName: bridge.author.lastName,
+          username: bridge.author.username,
+          avatar: bridge.author.avatar
+        },
+        likesCount: bridge.likesCount,
+        commentsCount: bridge.commentsCount,
+        createdAt: bridge.createdAt
+      })),
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
+
+  } catch (error) {
+    console.error('Get bridges error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Could not get bridges'
+    });
+  }
+};
+
+// Create bridge
+const createBridge = async (req: VercelRequest, res: VercelResponse) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { content, visibility = 'public', tags, media, location } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication Required',
+        message: 'User not authenticated'
+      });
+    }
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Content is required'
+      });
+    }
+
+    const bridge = new Bridge({
+      content: content.trim(),
+      author: userId,
+      visibility,
+      tags: tags || [],
+      media: media || [],
+      location: location || null
+    });
+
+    await bridge.save();
+    await bridge.populate('author', 'firstName lastName username avatar');
+
+    res.status(201).json({
+      message: 'Bridge created successfully',
+      bridge: {
+        id: bridge._id,
+        content: bridge.content,
+        visibility: bridge.visibility,
+        tags: bridge.tags,
+        media: bridge.media,
+        location: bridge.location,
+        author: {
+          id: bridge.author._id,
+          firstName: bridge.author.firstName,
+          lastName: bridge.author.lastName,
+          username: bridge.author.username,
+          avatar: bridge.author.avatar
+        },
+        likesCount: bridge.likesCount,
+        commentsCount: bridge.commentsCount,
+        createdAt: bridge.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Create bridge error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Could not create bridge'
+    });
+  }
+};
+
 // Main API handler
 export default async (req: VercelRequest, res: VercelResponse) => {
   setCorsHeaders(res);
@@ -273,6 +408,15 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     if (url === '/api/v1/auth/login' && method === 'POST') {
       return await login(req, res);
+    }
+
+    // Bridge routes
+    if (url?.startsWith('/api/v1/bridges/feed') && method === 'GET') {
+      return await getBridges(req, res);
+    }
+    
+    if (url === '/api/v1/bridges' && method === 'POST') {
+      return authenticateToken(req, res, () => createBridge(req, res));
     }
 
     // 404 for unmatched routes
