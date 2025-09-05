@@ -59,13 +59,22 @@ class ApiService {
     console.log('API Service: Base URL:', this.baseURL);
     
     try {
-      const result = await this.request<AuthResponse>('/v1/auth/login', {
+      const result = await this.request<any>('/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       });
       
       console.log('API Service: Login successful:', result);
-      return result;
+      
+      // Transform the response to match the expected format
+      return {
+        message: result.message,
+        user: result.user,
+        tokens: {
+          accessToken: result.token,
+          refreshToken: result.refreshToken
+        }
+      };
     } catch (error) {
       console.error('API Service: Login error:', error);
       throw error;
@@ -81,10 +90,20 @@ class ApiService {
     password: string;
     confirmPassword: string;
   }): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/v1/auth/register', {
+    const result = await this.request<any>('/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+    
+    // Transform the response to match the expected format
+    return {
+      message: result.message,
+      user: result.user,
+      tokens: {
+        accessToken: result.token,
+        refreshToken: result.refreshToken
+      }
+    };
   }
 
   async forgotPassword(email: string): Promise<ApiResponse> {
